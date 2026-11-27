@@ -262,6 +262,229 @@ wrong ECU, negative replies, the exact 24-read policy, budget priority and
 offline/exclusive 0600 output. Replay provenance remains unverified; locally
 review every report before sharing it.
 
+## Optional standard DPF pressure and temperature evidence profile
+
+`standard-dpf` is a separate **27-read maximum** plan and v5 report. The earlier
+16/19/22/24-read plans and v1/v2/v3/v4 reports remain unchanged. It adds only
+standard `01 7A`, `01 7B` and `01 7C`, after advertisement through the existing
+00/20/40/60 continuation chain. Measurements are prioritized as DPF 7A/7B/7C,
+pressure 6D/70, EGR 69/2C/2D, EGT 78/79, then the original eleven channels.
+The unchanged 45-second budget, full 6.2-second transaction reservation,
+200-ms gaps, explicit wired endpoints and no-retry rule still apply.
+
+Planning and replay remain offline:
+
+```sh
+python3 tools/discover_diesel.py --plan --profile standard-dpf
+python3 tools/discover_diesel.py --replay /private/dpf-probe.jsonl \
+  --profile standard-dpf --out /private/dpf-public-report.json
+```
+
+Review this exact plan and obtain separate explicit owner approval before
+any physical collection. An earlier profile's approval does not cover it.
+No physical use is authorized or performed by this source contribution.
+
+The v5 report identifies `profile: standard-dpf`. It retains the earlier
+standard fields and fixed `record_status` values, adding ten optional DPF
+`fields` across three PIDs:
+
+| PID | Data after `41 <pid>` | Fields in wire order | Conversion |
+| --- | --- | --- | --- |
+| 7A | Exactly seven bytes | Bank 1 delta, inlet, outlet pressure | Signed big-endian delta / 100 kPa; unsigned inlet/outlet / 100 kPa |
+| 7B | Exactly seven bytes | Bank 2 delta, inlet, outlet pressure | Same conversions, separate bank |
+| 7C | Exactly nine bytes | Bank 1 inlet/outlet, bank 2 inlet/outlet temperature | Unsigned big-endian raw / 10 - 40 C |
+
+A is the support byte. Pressure bits 0/1/2 authorize B-C/D-E/F-G respectively;
+temperature bits 0/1/2/3 authorize B-C/D-E/F-G/H-I. Reserved support bits reject
+the layout. Each numeric `value` requires an exact positive reply, valid PID
+advertisement and its own field support. A missing field stays unavailable;
+delta is never computed from inlet/outlet, and generic EGT is never used as a
+DPF inlet/outlet fallback. Bank/position names preserve protocol labels and do
+not establish the hardware fitted to this vehicle.
+
+Fields carry `bank`, `quantity`, `unit`, `capability` and `measurement`.
+Pressure uses `kPa`; temperature uses `celsius`. Delta has
+`pressure_reference: differential`; inlet/outlet use `not_established`, since
+the inspected references do not establish an absolute or atmospheric reference.
+No atmospheric value is assumed or subtracted.
+
+This evidence report preserves the full protocol domains: delta -327.68 to
+327.67 kPa, inlet/outlet 0 to 655.35 kPa, temperature -40 to 6513.5 C. Supported
+zero remains numeric. FFFF means -0.01 kPa delta, 655.35 kPa inlet/outlet or
+6513.5 C temperature; it is not an invented unavailable marker. These ranges
+are protocol arithmetic, not BMW plausibility limits. Values remain
+`decoded_requires_independent_validation` and are not promoted to application
+readiness or a physical compatibility claim.
+
+[DashLogic's published PID reference](https://www.dashlogic.com/docs/technical/obdii_pids)
+independently corroborates the layouts, per-field flags, signed delta and
+temperature conversion in the previously inspected
+[pinned OBDb catalog](https://github.com/OBDb/SAEJ1979/blob/1abdef6ae0c1b9134c8f2a10911a9daa1354649d/signalsets/v3/default.json).
+The German Environment Agency's
+[exhaust-emissions research report](https://www.umweltbundesamt.de/system/files/medien/1410/publikationen/2020-01-29_texte_22-2020_fortentwicklung-abgasuntersuchung_kurz_en.pdf)
+also identifies these standard DPF pressure/temperature PIDs. None establishes
+this X5's support. No vendor tables, descriptions, captures or proprietary
+standard are copied; the implementation uses protocol arithmetic and synthetic
+fixtures.
+
+Pressure and temperature alone do not establish regeneration status, soot/ash
+mass, time/distance since regeneration, inhibition reasons, completion or a
+service threshold. No such estimate, regeneration command, counter reset,
+dynamic DID, session change or new native app is added. PID 8B and other higher
+pages remain outside this plan. Exact DDE support, independent measurements
+and the shared B47/N57 evidence requested in #196 are still needed before
+validating or shipping a DPFDeck ECU profile. Generic, capability-gated app
+development can proceed offline against these documented standard formats.
+
+The 15 added discovery cases cover the entire signed/unsigned 16-bit domains,
+every support byte, exact prefix/length, no fallback/inference, all four frozen
+earlier contracts, missing/duplicate/negative evidence, privacy, wrong ECU,
+exact request/gap/budget bounds, no retries, offline planning/replay, explicit
+collection approval and exclusive 0600 report output. A complete 27-read run
+also exercises the real HSFZ exchange through local stream socket pairs,
+including heartbeat acknowledgement, pending and wrong-ECU/PID replies and
+split frames; those pairs cannot reach a vehicle or external network. The new
+`tools/fixtures/discovery-pressure-v4.json` freezes synthetic v4 output from
+unchanged source `f18cf1c`; it contains no vehicle data.
+
+## Optional standard aftertreatment evidence profile
+
+`standard-aftertreatment` is a separately selected **30-read maximum** plan and
+v6 report. The five earlier plans and report contracts (16/19/22/24/27 reads)
+stay unchanged. It adds the continuation-checked bitmap 80 and advertised 85/8B
+reads; after the two identity candidates and five bitmap pages, it prioritizes
+8B, then 85, followed by the existing DPF/pressure/EGR/EGT/standard measurements.
+Neither the native capability cache nor DPFDeck's wire format or UI is changed.
+
+Prepare or replay offline, from `source/`:
+
+```sh
+python3 tools/discover_diesel.py --plan --profile standard-aftertreatment
+python3 tools/discover_diesel.py --replay /private/probe.jsonl \
+  --profile standard-aftertreatment --out /private/aftertreatment-public.json
+```
+
+Physical use needs separate owner review/approval of this exact plan while
+parked. Approval for an earlier plan does not cover the added reads. There are
+no retries, scans, SSH/MOST connections, session changes, ECU writes or active
+commands. The same 200-ms gap, six-second transaction reserve and 45-second
+session budget apply. A slow session may finish after capability negotiation
+without collecting a measurement; the report keeps those fields unavailable.
+Only DME/DDE 12 receives these standard measurements.
+
+The two payload formats are independently corroborated by
+[DashLogic's reference](https://www.dashlogic.com/docs/technical/obdii_pids) and the
+[pinned OBDb catalog](https://github.com/OBDb/SAEJ1979/blob/1abdef6ae0c1b9134c8f2a10911a9daa1354649d/signalsets/v3/default.json).
+This is protocol-format evidence, not proof of N57/B47/B57 support. No database
+or proprietary standard is vendored; fixtures are synthetic.
+
+| PID | Exact payload after 41/PID | Report meaning |
+| --- | --- | --- |
+| 85 | Ten bytes. A low-four bits support each field; high bits must be zero. B-C and D-E are independent unsigned / 200 L/h rates. F is × 100 / 255 percent; G-J is unsigned big-endian seconds. | Separate average/demanded reagent consumption, tank level and NOx-warning runtime. |
+| 8B | Seven bytes. A bits 0–6 support seven fields; bit 7 and B bits 4–7 must be zero. B bits 0–3 contain four independent statuses/type. C is × 100 / 255 percent. D-E and F-G are unsigned minutes/km. | DPF in-progress status, passive/active type, two NOx-adsorber states, normalized trigger, average interval and average distance. |
+
+The report retains full protocol domains, with no invented all-ones sentinel:
+rates 0–327.675 L/h, fractions 0–100 percent, runtime 0–4294967295 seconds and
+averages 0–65535 minutes/km. The warning-runtime support caption in DashLogic
+mentions minutes, but its numeric formula and the independent catalog specify
+seconds; the exported quantity uses seconds. None of these domains is a BMW
+plausibility or maintenance limit.
+
+Every field has independent support and availability. Valid false status,
+passive type and numeric zero are retained. A supported type alone does not
+establish that regeneration is in progress. Unsupported fields omit `value`;
+missing/duplicate/malformed evidence remains unknown/unavailable. Rejected
+responses do not leak payload bytes or free-text metadata into the report.
+
+Average interval/distance are **between regenerations**, not time/distance
+since the last event. The normalized trigger is not measured soot or completion
+percentage. NOx-adsorber states are not a declaration of SCR health. Reagent
+level may reflect the ECU's level sensing strategy; neither it nor average
+consumption/runtime establishes remaining range or a current warning state.
+No requested/inhibited regeneration state, soot/ash measurement, threshold,
+alert or DPFDeck state is inferred.
+
+Fifteen added discovery tests cover all support/status bytes, full 16-bit rate
+and average domains, every fraction byte, 32-bit runtime boundaries, independent
+status/type flags, exact shapes, the bitmap-80 chain, duplicates/NRCs/privacy,
+request ordering/bounds, slow-session limits and offline/exclusive-output gates.
+A complete 30-read run uses real HSFZ framing over local stream socket pairs,
+including heartbeat acknowledgement, pending, wrong-ECU/PID and split replies.
+All 77 discovery cases plus four probe and six capture cases pass locally.
+The v5 fixture freezes unchanged synthetic output from `683e9c2`.
+
+Exact ECU advertisement, independent diagnostic comparisons and the shared
+#196 evidence process remain necessary before application use. This profile
+has not been run on the owner's vehicle.
+
+## Optional standard SCR inducement evidence profile
+
+`standard-scr` is a separate **31-read maximum** plan and v7 report. It adds
+advertised `01 88` to the v6 evidence policy and prioritizes it before 8B/85.
+The six older plans, allowlists and report contracts (16/19/22/24/27/30 reads)
+stay unchanged. A frozen synthetic v6 fixture records the local v6 source tree
+`65afc57368160ecb378f36a125004f16b26eeb4a`, before the SCR change; that is a
+source-tree checkpoint, not a published commit or a vehicle capture.
+
+Prepare or replay offline, from `source/`:
+
+```sh
+python3 tools/discover_diesel.py --plan --profile standard-scr
+python3 tools/discover_diesel.py --replay /private/probe.jsonl \
+  --profile standard-scr --out /private/scr-public.json
+python3 tools/test_discover_scr.py
+```
+
+Physical collection requires separate owner review and approval of this exact
+parked plan. Approval of an older plan does not cover PID 88. The same wired
+link-local addressing, DME/DDE 12 target, 200-ms gap, six-second transaction
+reserve, 45-second limit and no-retry policy apply. No scan, write, session
+change, SSH/MOST access, reset or actuator command is added. A slow session may
+end before a measurement; unavailable evidence is not filled from another PID.
+
+PID 88 must have exactly thirteen data bytes after `41 88`. Byte A bit 7 is
+the current inducement-active flag; bits 3/2/1/0 separately report excessive
+NOx, reagent-consumption deviation, incorrect reagent and low reagent causes.
+Bits 6–4 are reserved and rejected. Unlike PID 85, these are status/cause bits,
+not per-field support bits: a valid advertised all-zero reply is supported
+false/zero data. Cause bits alone do not establish that inducement is active.
+
+Byte B's low/high nibbles contain the 0–10000 / 10000–20000 km history blocks;
+byte C's low/high nibbles contain 20000–30000 / 30000–40000 km blocks. Their
+cause flags stay explicitly historical. D-E is current-block distance with
+inducement active, F-G is current-block distance travelled, and H-I/J-K/L-M
+are the remaining three historical distance counters. Each is big-endian
+unsigned km. No ratio, remaining range, odometer, DPF state or since-last
+regeneration quantity is derived.
+
+These layouts are corroborated by
+[DashLogic](https://www.dashlogic.com/docs/technical/obdii_pids), the same
+[pinned OBDb catalog](https://github.com/OBDb/SAEJ1979/blob/1abdef6ae0c1b9134c8f2a10911a9daa1354649d/signalsets/v3/default.json),
+and source inspection of the official
+[J1699-3 release 17.00.00](https://sourceforge.net/projects/j1699-3/files/j1699/j1699-17.00.00/j1699-ver-17.00.00.zip/download)
+(archive SHA-256 `fa7f6349a5fd57f20295c7b3a01a144f160d1715ffc1bf211a6da20838a4fd39`).
+`SidSaveResponseData.c` checks thirteen bytes;
+`VerifyDiagnosticSupportAndData.c` decodes all five counter pairs at their own
+offsets. This resolves the manufacturer's repeated B/C formula text under
+different byte-pair rows. No reference implementation or restricted standard
+is copied or executed.
+
+Counters retain their full 0–65535 wire domain for evidence review. Values
+above the documented 10000-km block size carry
+`outside_documented_block_range: true`; they are not silently clamped or
+given an invented FFFF sentinel. This flag is an evidence check, not an OEM
+fault diagnosis or a maintenance threshold. Exact ECU semantics and an
+independent comparison remain necessary before application use.
+
+Thirteen added tests cover current/reserved status bytes, every historical
+byte, the full counter domain, all five endian offsets, valid false/zero,
+nonadvertisement, duplicates, malformed/refused replies, privacy, all six
+frozen contracts, 31-read ordering/limits, slow sessions and offline/output
+approval gates. A complete local HSFZ stream-pair run checks heartbeat/pending,
+wrong ECU/PID and split replies. No native app, firmware profile, regeneration
+control or confirmed N57/B47/B57 support is added. The owner's vehicle has not
+been queried with this profile.
+
 ## Stage A — non-invasive parked discovery
 
 1. Obtain the owner's explicit approval for the printed bounded collection
@@ -286,7 +509,10 @@ review every report before sharing it.
    result as proof of the identifier's meaning. `F150` alone does not establish
    exact N57 variant, DDE family, HWEL/SWFL or EGS software. Obtain those from an
    authorized inventory report, redact VINs and serials, and correlate the ECU
-   address and evidence source. Do not invent additional identity DIDs.
+   address and evidence source. The separate [standard identity evidence tool](ECU-IDENTITY.md)
+   can collect three documented hardware/software DIDs for private review after
+   approval of its own six-read plan. It does not decode BMW records or replace
+   an authorized HWEL/SWFL inventory. Do not invent additional identity DIDs.
 5. Enabling head-unit SSH requires a **separate explicit approval**. If it is
    already authorized and enabled, use `capture_headunit.py` to collect hashes,
    exact firmware, architecture and LayerManager screen 0. It supports split

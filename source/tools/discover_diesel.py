@@ -20,6 +20,8 @@ MAX_REQUESTS, MAX_SECONDS = 16, 45
 EGT_PIDS = (0x78, 0x79)
 EGR_PIDS = (0x69, 0x2c, 0x2d)
 PRESSURE_PIDS = (0x6d, 0x70)
+DPF_PIDS = (0x7a, 0x7b, 0x7c)
+AFTERTREATMENT_PIDS = (0x8b, 0x85)
 FRAMEWORKS = ("libAppFramework.A.so", "libCoreFramework.A.so")
 ALLOWLIST = {(ecu, bytes.fromhex("22f150")) for ecu in (0x12, 0x18)} | {
     (0x12, bytes((1, pid))) for pid in (0, 0x20, 0x40, *PIDS)
@@ -37,7 +39,23 @@ POLICIES = {
     "standard-pressure": (PRESSURE_PIDS + EGR_PIDS + EGT_PIDS + PIDS, (0, 0x20, 0x40, 0x60), 24, ALLOWLIST | {
         (0x12, bytes((1, pid))) for pid in (0x60, *PRESSURE_PIDS, *EGR_PIDS, *EGT_PIDS)
     }),
+    # DPF pressure/temperature evidence only; no inferred regeneration or soot.
+    "standard-dpf": (DPF_PIDS + PRESSURE_PIDS + EGR_PIDS + EGT_PIDS + PIDS, (0, 0x20, 0x40, 0x60), 27, ALLOWLIST | {
+        (0x12, bytes((1, pid))) for pid in (0x60, *DPF_PIDS, *PRESSURE_PIDS, *EGR_PIDS, *EGT_PIDS)
+    }),
 }
+# Explicitly selected higher-page evidence; the five earlier policies stay frozen.
+POLICIES["standard-aftertreatment"] = (
+    AFTERTREATMENT_PIDS + POLICIES["standard-dpf"][0],
+    (0, 0x20, 0x40, 0x60, 0x80), 30,
+    POLICIES["standard-dpf"][3] | {(0x12, bytes((1, pid))) for pid in (0x80, *AFTERTREATMENT_PIDS)},
+)
+# SCR evidence is a new policy, not an expansion of any earlier reviewed plan.
+POLICIES["standard-scr"] = (
+    (0x88,) + POLICIES["standard-aftertreatment"][0],
+    POLICIES["standard-aftertreatment"][1], 31,
+    POLICIES["standard-aftertreatment"][3] | {(0x12, bytes((1, 0x88)))},
+)
 
 
 def policy(profile):
@@ -227,6 +245,131 @@ def pressure_fields(pid, state, reply):
     return complete, fields
 
 
+def dpf_fields(pid, state, reply):
+    """Decode explicit standard bank/position fields, not soot or regeneration.
+
+    Delta pressure is signed; inlet/outlet pressure has no assumed atmospheric
+    reference. Full protocol ranges are retained for independent validation.
+    Format/scaling sources are documented in DIESEL-VALIDATION.md.
+    """
+    if pid not in DPF_PIDS:
+        raise ValueError("unknown standard DPF PID")
+    temperature = pid == 0x7c
+    count = 4 if temperature else 3
+    complete = (state == "advertised" and reply is not None and len(reply) == 3 + 2*count
+                and reply[:2] == bytes((0x41, pid)) and not reply[2] & (0xf0 if temperature else 0xf8))
+    fields = []
+    for index in range(count):
+        capability = "unsupported" if state == "unsupported" else "unknown"
+        item = {"bank": index // 2 + 1 if temperature else pid - 0x79,
+                "quantity": (("inlet_temperature", "outlet_temperature")[index % 2] if temperature else
+                             ("delta_pressure", "inlet_pressure", "outlet_pressure")[index]),
+                "unit": "celsius" if temperature else "kPa",
+                "capability": capability, "measurement": "unavailable"}
+        if not temperature:
+            item["pressure_reference"] = "differential" if index == 0 else "not_established"
+        if complete:
+            supported = bool(reply[2] & (1 << index))
+            item["capability"] = "supported" if supported else "unsupported"
+            if supported:
+                raw = int.from_bytes(reply[3+2*index:5+2*index], "big", signed=not temperature and index == 0)
+                item.update(value=(raw - 400) / 10 if temperature else raw / 100,
+                            measurement="decoded_requires_independent_validation")
+        fields.append(item)
+    return complete, fields
+
+
+def aftertreatment_fields(pid, state, reply):
+    """Keep standard status, trigger, averages and reagent quantities separate.
+
+    These are evidence fields, not exact-ECU validation or app state. In
+    particular neither an average nor a trigger means 'since last' or completion.
+    Only the explicitly supported fields of an exact response are exported.
+    """
+    if pid not in AFTERTREATMENT_PIDS:
+        raise ValueError("unknown standard aftertreatment PID")
+    reagent = pid == 0x85
+    definitions = (
+        (("average_reagent_consumption", "L/h"),
+         ("average_demanded_reagent_consumption", "L/h"),
+         ("reagent_tank_level", "percent"), ("nox_warning_runtime", "s")) if reagent else
+        (("dpf_regeneration_in_progress", "boolean"), ("dpf_regeneration_type", "category"),
+         ("nox_adsorber_regeneration_in_progress", "boolean"),
+         ("nox_adsorber_desulfurization_in_progress", "boolean"),
+         ("normalized_regeneration_trigger", "percent"),
+         ("average_regeneration_interval", "min"), ("average_regeneration_distance", "km"))
+    )
+    complete = (state == "advertised" and reply is not None and len(reply) == (12 if reagent else 9)
+                and reply[:2] == bytes((0x41, pid)) and not reply[2] & (0xf0 if reagent else 0x80)
+                and (reagent or not reply[3] & 0xf0))
+    values = ()
+    if complete:
+        if reagent:
+            values = (int.from_bytes(reply[3:5], "big") / 200,
+                      int.from_bytes(reply[5:7], "big") / 200,
+                      reply[7] * 100 / 255, int.from_bytes(reply[8:12], "big"))
+        else:
+            values = (bool(reply[3] & 1), "active" if reply[3] & 2 else "passive",
+                      bool(reply[3] & 4), bool(reply[3] & 8), reply[4] * 100 / 255,
+                      int.from_bytes(reply[5:7], "big"), int.from_bytes(reply[7:9], "big"))
+    fields = []
+    for index, (quantity, unit) in enumerate(definitions):
+        item = {"quantity": quantity, "unit": unit,
+                "capability": "unsupported" if state == "unsupported" else "unknown",
+                "measurement": "unavailable"}
+        if complete:
+            supported = bool(reply[2] & (1 << index))
+            item["capability"] = "supported" if supported else "unsupported"
+            if supported:
+                item.update(value=values[index], measurement="decoded_requires_independent_validation")
+        fields.append(item)
+    return complete, fields
+
+
+def scr_inducement_fields(state, reply):
+    """Decode PID 88 evidence without mixing current state and history.
+
+    There are no per-field support flags. A valid advertised response defines
+    false/zero as data; malformed, absent or unadvertised replies define none.
+    Raw counter domains are retained for review, never used as remaining range.
+    """
+    complete = (state == "advertised" and reply is not None and len(reply) == 15
+                and reply[:2] == bytes((0x41, 0x88)) and not reply[2] & 0x70)
+    data = reply[2:] if complete else bytes(13)
+    fields = []
+
+    def append(quantity, scope, value, *, block=None, unit="boolean"):
+        field = {"quantity": quantity, "scope": scope, "unit": unit,
+                 "capability": "supported" if complete else "unsupported" if state == "unsupported" else "unknown",
+                 "measurement": "unavailable"}
+        if block is not None:
+            field["block"] = block
+        if complete:
+            field.update(value=value, measurement="decoded_requires_independent_validation")
+            if unit == "km":
+                field["outside_documented_block_range"] = value > 10000
+        fields.append(field)
+
+    causes = ("nox_emissions_too_high", "reagent_consumption_deviation",
+              "incorrect_reagent", "reagent_level_too_low")
+    append("scr_inducement_active", "current", bool(data[0] & 0x80))
+    for index, cause in enumerate(causes):
+        append(cause, "current", bool(data[0] & (1 << (3-index))))
+    # Wire byte B stores blocks 2/1; C stores 4/3. Export chronological labels.
+    for block, byte, shift in (("history_0_10000_km", 1, 0), ("history_10000_20000_km", 1, 4),
+                               ("history_20000_30000_km", 2, 0), ("history_30000_40000_km", 2, 4)):
+        for index, cause in enumerate(causes):
+            append(cause, "historical", bool(data[byte] & (1 << (shift+3-index))), block=block)
+    for offset, quantity, scope, block in (
+            (3, "distance_with_inducement_active", "current_block", "current_10000_km"),
+            (5, "distance_travelled", "current_block", "current_10000_km"),
+            (7, "distance_with_inducement_active", "historical", "history_10000_20000_km"),
+            (9, "distance_with_inducement_active", "historical", "history_20000_30000_km"),
+            (11, "distance_with_inducement_active", "historical", "history_30000_40000_km")):
+        append(quantity, scope, int.from_bytes(data[offset:offset+2], "big"), block=block, unit="km")
+    return complete, fields
+
+
 def report(rows, headunit=None, evidence="replay", *, profile="standard"):
     """Export only known fixed requests and validated response shapes.
 
@@ -282,11 +425,26 @@ def report(rows, headunit=None, evidence="replay", *, profile="standard"):
         reply = reply_bytes(row)
         state = "unknown" if pid not in checked else "unsupported" if pid not in advertised else "advertised"
         entry = {"pid": f"{pid:02X}", "capability": state, "measurement": "unavailable"}
-        if profile in ("standard-diesel", "standard-pressure"):
+        if profile in ("standard-diesel", "standard-pressure", "standard-dpf", "standard-aftertreatment", "standard-scr"):
             entry["record_status"] = ("not_present" if key not in records else
                                       "ambiguous_duplicate" if row is None else
                                       "present_no_valid_reply" if not reply else "present_reply_bytes")
-        if pid in PRESSURE_PIDS:
+        if pid == 0x88:
+            complete, entry["fields"] = scr_inducement_fields(state, reply)
+            if complete:
+                entry["reply"] = reply.hex(" ")
+                entry["measurement"] = "field_layout_requires_independent_validation"
+        elif pid in AFTERTREATMENT_PIDS:
+            complete, entry["fields"] = aftertreatment_fields(pid, state, reply)
+            if complete:
+                entry["reply"] = reply.hex(" ")
+                entry["measurement"] = "field_layout_requires_independent_validation"
+        elif pid in DPF_PIDS:
+            complete, entry["fields"] = dpf_fields(pid, state, reply)
+            if complete:
+                entry["reply"] = reply.hex(" ")
+                entry["measurement"] = "field_layout_requires_independent_validation"
+        elif pid in PRESSURE_PIDS:
             complete, entry["fields"] = pressure_fields(pid, state, reply)
             if complete:
                 entry["reply"] = reply.hex(" ")
@@ -323,7 +481,10 @@ def report(rows, headunit=None, evidence="replay", *, profile="standard"):
     result = {
         "format": ("idrive-diesel-discovery-v1" if profile == "standard" else
                    "idrive-diesel-discovery-v2" if profile == "standard-egt" else
-                   "idrive-diesel-discovery-v3" if profile == "standard-diesel" else "idrive-diesel-discovery-v4"),
+                   "idrive-diesel-discovery-v3" if profile == "standard-diesel" else
+                   "idrive-diesel-discovery-v4" if profile == "standard-pressure" else
+                   "idrive-diesel-discovery-v5" if profile == "standard-dpf" else
+                   "idrive-diesel-discovery-v6" if profile == "standard-aftertreatment" else "idrive-diesel-discovery-v7"),
         "evidence": evidence,
         "vehicle_platform": "not_inferred",
         "ecu_identification": identities,
@@ -341,13 +502,27 @@ def report(rows, headunit=None, evidence="replay", *, profile="standard"):
     if profile != "standard":
         result["profile"] = profile
         result["limitations"].append("EGT bank/sensor fields do not establish physical sensor locations or regeneration")
-    if profile in ("standard-diesel", "standard-pressure"):
+    if profile in ("standard-diesel", "standard-pressure", "standard-dpf", "standard-aftertreatment", "standard-scr"):
         result["limitations"][1] = "No DPF, SCR or BMW-specific oil/EGR mapping is established"
         result["limitations"].append("EGR A/B actual is reported normalized duty/position, not inferred flow or an independent position measurement")
         result["limitations"].append("Legacy EGR request/error never establishes A/B actual values")
-    if profile == "standard-pressure":
+    if profile in ("standard-pressure", "standard-dpf", "standard-aftertreatment", "standard-scr"):
         result["limitations"].append("Standard pressure A/B fields do not establish physical rail/turbo identity or exact ECU support")
         result["limitations"].append("Boost pressure is absolute, not manifold or derived gauge boost; no atmospheric value is assumed")
+    if profile in ("standard-dpf", "standard-aftertreatment", "standard-scr"):
+        result["limitations"][1] = "No DPF regeneration/soot/ash, SCR or BMW-specific oil/EGR mapping is established"
+        result["limitations"].append("DPF bank/inlet/outlet labels do not establish this vehicle's physical sensor layout or exact ECU support")
+        result["limitations"].append("DPF pressures and temperatures do not establish regeneration status, soot/ash mass, completion or service thresholds")
+        result["limitations"].append("DPF inlet/outlet pressure reference is not established; full protocol ranges are not BMW plausibility limits")
+    if profile in ("standard-aftertreatment", "standard-scr"):
+        result["limitations"][1] = "No BMW-specific oil/EGR, DPF soot/ash or exact-ECU SCR/DPF mapping is established"
+        result["limitations"].append("Regeneration status/type are reported independently; supported passive type alone does not mean regeneration is in progress")
+        result["limitations"].append("Normalized regeneration trigger is not completion percentage or measured soot; average interval/distance are not since-last values")
+        result["limitations"].append("Reagent level/consumption and NOx-warning runtime do not establish SCR health, range or a DPF state")
+    if profile == "standard-scr":
+        result["limitations"].append("SCR inducement current state and cause flags are independent of historical causes and distance counters")
+        result["limitations"].append("PID 88 has no per-field support flags; valid false/zero is data, not unsupported")
+        result["limitations"].append("Inducement distances are 10000-km block counters, not remaining range, odometer or since-last regeneration; out-of-block values are flagged evidence only")
     return result
 
 
@@ -358,7 +533,7 @@ def main():
     mode.add_argument("--replay", type=Path, help="offline probe JSONL input; no connection")
     mode.add_argument("--collect", action="store_true", help="execute the reviewed parked read-only plan")
     parser.add_argument("--profile", choices=POLICIES, default="standard",
-                        help="standard: 16 reads/v1; standard-egt: 19 reads/v2; standard-diesel: 22 reads/v3; standard-pressure: separate 24-read plan/v4")
+                        help="standard: 16 reads/v1; standard-egt: 19 reads/v2; standard-diesel: 22 reads/v3; standard-pressure: 24 reads/v4; standard-dpf: 27 reads/v5; standard-aftertreatment: 30 reads/v6; standard-scr: separate 31-read plan/v7")
     parser.add_argument("--owner-approved-parked", action="store_true", help="owner has explicitly approved this exact collection")
     parser.add_argument("--local", type=enet_address)
     parser.add_argument("--gateway", type=enet_address)

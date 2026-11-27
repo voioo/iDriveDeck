@@ -51,6 +51,7 @@ int main() {
         BoostDeck app(dispatcher,bmw::BasicString<char>("BoostDeck"),1,0,version,bundle,bundle,
                       prefs,assignments,scale);
         assert(app.onInit() && app.fd_>=0);
+        action(507); // integration fixture explicitly exercises the saved Custom layout
         assert(app.rail_scale_.maximum()==2000 && !app.diesel_);
         assert(last(128).text=="Diesel rail scale: 0 - 2000 bar");
         action(503);
@@ -117,6 +118,9 @@ int main() {
         assert(app.rail_scale_.choice==BoostRailScale::DEFAULT);
         assert(app.onFinalize());
     }
+    char defaults[300];
+    snprintf(defaults,sizeof defaults,"%s.defaults",assignments);
+    unlink(defaults);
     unlink(scale); unlink(assignments); unlink(prefs);
     assert(rmdir(directory)==0);
     puts("BoostDeck production range callbacks, bars/dials/vertical, units, staleness and save failure passed.");

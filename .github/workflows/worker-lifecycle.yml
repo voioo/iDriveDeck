@@ -1,0 +1,57 @@
+name: Worker process ownership
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - cc: gcc
+            cxx: g++
+          - cc: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          repository: inotbarnacle/iDriveDeck
+          ref: 8567abaadd1305965b3ad39e3222575cd49c507d
+          path: baseline
+          persist-credentials: false
+      - name: Host regressions and production plugin ownership tests
+        run: make -C candidate/source/native test CC=${{ matrix.cc }} CXX=${{ matrix.cxx }}
+      - name: Prove original production plugins fail the live-worker regression
+        env:
+          CXX: ${{ matrix.cxx }}
+        run: python3 -B candidate/source/tools/check_worker_lifecycle.py --baseline-root baseline
+      - name: Production plugin syntax and static analysis
+        env:
+          CXX: ${{ matrix.cxx }}
+        run: |
+          set -e
+          while IFS= read -r plugin; do
+            # Legacy menu callback names hide SDK start/stop overloads in some
+            # plugins; preserve that existing API while treating other warnings as errors.
+            "$CXX" -std=gnu++98 -Wall -Wextra -Werror -Wno-overloaded-virtual -Icandidate/source/native/sdk -Icandidate/source/native/src/common -Icandidate/source/native/src/ipc -fsyntax-only "candidate/source/native/src/plugins/$plugin.cpp"
+            if [ "$CXX" = clang++ ]; then
+              "$CXX" --analyze -Xanalyzer -analyzer-output=text -std=gnu++98 -Icandidate/source/native/sdk -Icandidate/source/native/src/common -Icandidate/source/native/src/ipc "candidate/source/native/src/plugins/$plugin.cpp"
+            fi
+          done < candidate/source/native/tests/lifecycle-plugins.txt
+  memory:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: All production reapers and owned-child cleanup under sanitizers
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: make -C source/native test-lifecycle CC=clang CXX=clang++ CFLAGS='-O1 -g -std=c99 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer' CXXFLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'

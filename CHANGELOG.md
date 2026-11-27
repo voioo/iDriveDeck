@@ -6,6 +6,10 @@
 - Fault-worker command-line use defaults to reading. Clearing now requires both `--clear` and `--confirm-clear`; the existing UI confirmation supplies them. `--status-mask` opts into availability metadata while ordinary read output retains its legacy format.
 - Host/mock tests cover status masks, malformed replies, UI profiles and confirmation boundaries. These source changes have not been built for QNX or validated on a physical N57.
 
+- BoostDeck offers a separate diesel rail-pressure display scale instead of
+  filling its gasoline 250-bar scale for every higher reading. This is host-tested
+  source, with no rebuilt QNX package or vehicle validation.
+
 ## v0.7.18
 
 - Renames the project to **iDriveDeck**.

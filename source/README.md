@@ -10,3 +10,7 @@ settings, legacy preferences, resource generation and host validation limits.
 
 [Engine fault-code handling](docs/FAULT-CODES.md) describes supported status bits,
 the DDE/raw view, description limitations and explicit clear confirmation.
+
+BoostDeck's [diesel rail display scale](docs/BOOST-DIESEL-SCALE.md) is selectable
+without changing the gasoline range or saved gauge configuration. Host tests do
+not establish vehicle support.

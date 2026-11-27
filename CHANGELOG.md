@@ -11,6 +11,9 @@
   filling its gasoline 250-bar scale for every higher reading. This is host-tested
   source, with no rebuilt QNX package or vehicle validation.
 
+- BoostDeck adds standard EGT bank/sensor gauges with PID and sensor-support gating, independent freshness and bounded polling. Detected defaults choose at most one EGT. No exhaust-location or regeneration inference is added.
+- Existing signal IDs, ordinary NBG7 packets and B1/B2 settings retain their original meaning. Extended readings use 64-bit masks, NBG8/NBC2 frames and B3 assignments; matching plugin and worker builds are required. These changes are host-tested source, not N57 or QNX runtime approval.
+
 ## v0.7.18
 
 - Renames the project to **iDriveDeck**.

@@ -7,3 +7,6 @@ vehicle checks, see [Diesel discovery and validation](docs/DIESEL-VALIDATION.md)
 
 [ShiftDeck engine profiles](docs/SHIFT-PROFILES.md) covers diesel target/display
 settings, legacy preferences, resource generation and host validation limits.
+
+[Engine fault-code handling](docs/FAULT-CODES.md) describes supported status bits,
+the DDE/raw view, description limitations and explicit clear confirmation.

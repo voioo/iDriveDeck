@@ -70,10 +70,13 @@ ASan/UBSan for every reaper.
 Host syntax checks suppress the pre-existing SDK callback-overload hiding warning
 in menus such as BEAMer; other enabled warnings remain errors. Callback names
 are left intact by this ownership fix.
-The local Clang stream checker also reports two inherited findings in
-`launch_records.h:39` (reading after a failed/EOF read). Both occur in the pinned
-baseline as well. They remain a separate file-I/O follow-up; this analysis is
-not described as warning-free.
+The isolated lifecycle contribution at `76a062d` also reports two inherited
+Clang stream findings in `launch_records.h:39` (reading after a failed/EOF read),
+which occur in the pinned baseline as well. The combined branch includes the
+separate [LaunchRecords fix #210](https://github.com/inotbarnacle/iDriveDeck/pull/210)
+and its real failing-stream regression. Clang analysis of the updated production
+LaunchDeck translation unit no longer reports those findings. This does not
+attribute a vehicle freeze to file I/O or fold the fix into PR #143's source.
 The source fix belongs to the existing PR #143; the regression additions are a separate commit so its contributor or maintainer
 can reuse them independently. The fork integration branch can test this
 dependency alongside the diesel contributions while upstream review proceeds.

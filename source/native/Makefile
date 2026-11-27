@@ -41,7 +41,7 @@ build/shift-deck: src/workers/shift_deck_worker.c $(WORKER_COMMON) | build
 build/mhd-maps: src/workers/mhd_maps_worker.c $(WORKER_COMMON) | build
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
-build/engine-codes: src/workers/engine_codes_worker.c src/common/fault_codes.h $(WORKER_COMMON) | build
+build/engine-codes: src/workers/engine_codes_worker.c src/common/fault_codes.h src/common/obd_fault_codes.h $(WORKER_COMMON) | build
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
 build/bootmod3: src/workers/bootmod3_suite_worker.c src/workers/bm3_profiles.h $(WORKER_COMMON) | build
@@ -134,15 +134,19 @@ test-shift-profiles: build/test-shift-preferences build/test-shift-profile-plugi
 build/test-fault-codes: tests/test_fault_codes.c src/common/fault_codes.h | build
 	$(CC) $(CFLAGS) -Isrc/common $< -o $@
 
-build/test-fault-display: tests/test_fault_display.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/gauge_preferences.h | build
+build/test-obd-fault-codes: tests/test_obd_fault_codes.c src/common/obd_fault_codes.h | build
+	$(CC) $(CFLAGS) -Isrc/common $< -o $@
+
+build/test-fault-display: tests/test_fault_display.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/common -Isrc/plugins $< -o $@
 
 # Same MIT framework stand-in as PR #143/#203; no factory libraries are linked.
-build/test-fault-plugin: tests/test_fault_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/engine_codes.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/gauge_preferences.h sdk/bmw_list.h | build
+build/test-fault-plugin: tests/test_fault_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/engine_codes.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp -o $@
 
-test-faults: build/test-fault-codes build/test-fault-display build/test-fault-plugin
+test-faults: build/test-fault-codes build/test-obd-fault-codes build/test-fault-display build/test-fault-plugin
 	./build/test-fault-codes
+	./build/test-obd-fault-codes
 	./build/test-fault-display
 	./build/test-fault-plugin
 
@@ -179,6 +183,7 @@ test: test-launch-records test-warm-readiness test-lifecycle test-boost-defaults
 	./build/test-diag-link
 	$(PYTHON) -B tests/test_drive_apps.py
 	$(PYTHON) -B tests/test_oneshot_most.py
+	$(PYTHON) -B tests/test_obd_faults.py
 	$(PYTHON) -B tests/test_transport.py
 	$(PYTHON) -B tests/test_diesel_capabilities.py
 	$(PYTHON) -B ../tools/test_fault_resources.py

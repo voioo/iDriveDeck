@@ -554,6 +554,14 @@ in the existing desktop installer. Do not select installation. Record:
 - Original app folders, preferences, checksums, backup destination, exact files
   a proposed installation would modify and restoration instructions.
 
+If the exact extra read is authorized, the head-unit capture's optional
+`--storage` flag records the HMI data filesystem's reported total, used and
+available KiB. Split-node captures run the read on OMAP. See
+[storage evidence](HEADUNIT-STORAGE.md) for the command and parsing limits.
+Unknown output remains unavailable. This snapshot is separate from the
+installer's compatibility decision and does not assess whether a candidate
+payload, backups and temporary allocation will fit.
+
 Unmatched hashes, missing ABI evidence or untested runtime compatibility prevent
 approval. No firmware profile is added by this tool or this procedure.
 

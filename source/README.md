@@ -16,3 +16,6 @@ without changing the gasoline range or saved gauge configuration. Host tests do
 not establish vehicle support.
 [Automatic diesel gauges](docs/AUTO-DIESEL-GAUGES.md) uses explicit PID/EGS
 evidence for new defaults while retaining existing custom layouts.
+
+[Worker lifecycle regression coverage](docs/WORKER-LIFECYCLE.md) exercises the
+existing PR #143 process-ownership fix with production plugins and host children.

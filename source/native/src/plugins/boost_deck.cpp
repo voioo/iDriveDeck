@@ -238,7 +238,7 @@ public:
     void reapCollector() {
         if (collector_ <= 0) return;
         pid_t ended = waitpid(collector_, 0, WNOHANG);
-        if (ended == collector_ || (ended < 0 && errno == ECHILD)) {
+        if (ended == collector_ || (ended<0 && errno==ECHILD && kill(collector_,0)!=0 && errno==ESRCH)) {
             collector_ = -1;
             stopping_ = false;
         }
@@ -460,7 +460,7 @@ void BoostDeck::updateSettings() {
 void BoostDeck::reapTone() {
     if (tone_>0) {
         pid_t ended=waitpid(tone_,0,WNOHANG);
-        if (ended==tone_ || (ended<0 && errno==ECHILD)) tone_=-1;
+        if (ended==tone_ || (ended<0 && errno==ECHILD && kill(tone_,0)!=0 && errno==ESRCH)) tone_=-1;
     }
 }
 

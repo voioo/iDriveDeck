@@ -10,7 +10,11 @@ MOST_HEADERS = src/common/most/most_link.h src/common/most/dsi_client.h src/comm
 FAKE_DSI = tests/fake_dsi.c tests/fake_dme.c tests/fake_dsi.h tests/fake_dme.h
 WORKER_COMMON = $(CORE_LINK) $(MOST) tests/fake_most_env.c $(FAKE_DSI) $(HEADERS) $(MOST_HEADERS)
 HOST_LINK = $(CC) $(CFLAGS) -pthread -DMOST_HOST -Isrc/common -Isrc/ipc -Isrc/workers -Itests
-.PHONY: assets launch-assets test test-shift-profiles test-faults test-boost-scale test-boost-defaults
+LIFECYCLE_PLUGINS = $(shell cat tests/lifecycle-plugins.txt)
+LIFECYCLE_TESTS = $(addprefix build/test-reap-,$(LIFECYCLE_PLUGINS))
+# Integration branches can supply objects used by their expanded plugins.
+LIFECYCLE_EXTRA_OBJECTS ?= build/boost-defaults.o
+.PHONY: assets launch-assets test test-shift-profiles test-faults test-boost-scale test-boost-defaults test-lifecycle
 
 assets: | build
 	unzip -p ../../packages/dashboard.zip BoostDeck/BoostDeck_ALL_Images.zip > build/boostdeck-base-images.zip
@@ -139,10 +143,20 @@ test-boost-scale: build/test-boost-rail-scale build/test-boost-scale-plugin
 	./build/test-boost-rail-scale
 	./build/test-boost-scale-plugin
 
+build/lifecycle-core.o: $(CORE) $(HEADERS) | build
+	$(CC) $(CFLAGS) -Dbd_mono_ms=lifecycle_system_mono_ms -Isrc/common -c $< -o $@
+
+build/test-reap-%: tests/test_worker_lifecycle.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/%.cpp build/lifecycle-core.o build/launch_timer.o $(LIFECYCLE_EXTRA_OBJECTS) $(wildcard src/plugins/*.h) $(HEADERS) sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests -DTEST_$*=1 -DLIFECYCLE_SOURCE='"$(abspath src/plugins/$*.cpp)"' $< tests/fake_bmw.cpp build/lifecycle-core.o build/launch_timer.o $(LIFECYCLE_EXTRA_OBJECTS) -lm -o $@
+
+test-lifecycle: $(LIFECYCLE_TESTS)
+	$(PYTHON) -B ../tools/check_worker_lifecycle.py
+	@set -e; for test in $(LIFECYCLE_TESTS); do ./$$test; done
+
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-launch-records build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector
+test: test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-launch-records build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector
 	./build/test-obd-capabilities
 	./build/test-warm-progress
 	./build/test-boost-preferences

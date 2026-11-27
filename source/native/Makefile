@@ -91,6 +91,9 @@ build/exhaust-flap: src/workers/exhaust_flap_worker.c $(WORKER_COMMON) | build
 build/test-core: tests/test_core.c $(CORE) $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -lm -o $@
 
+build/test-core-locale: tests/test_core_locale.c tests/fixtures/boost_locale_frame.h $(CORE) $(HEADERS) | build
+	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -lm -o $@
+
 build/test-obd-capabilities: tests/test_obd_capabilities.c src/common/obd_capabilities.c $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -o $@
 
@@ -248,10 +251,11 @@ test-lifecycle: $(LIFECYCLE_TESTS)
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-reagent test-dpf test-pressure test-egr test-egt test-launch-records test-warm-readiness test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/warmdeck-collector build/mgflasher build/hybriddeck-collector
+test: test-reagent test-dpf test-pressure test-egr test-egt test-launch-records test-warm-readiness test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-core-locale build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/warmdeck-collector build/mgflasher build/hybriddeck-collector
 	./build/test-boost-preferences
 	./build/test-launch-timer
 	./build/test-core
+	./build/test-core-locale
 	./build/test-most
 	./build/test-diag-link
 	$(PYTHON) -B tests/test_udp_ports.py

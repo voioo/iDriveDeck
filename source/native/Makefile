@@ -14,7 +14,7 @@ LIFECYCLE_PLUGINS = $(shell cat tests/lifecycle-plugins.txt)
 LIFECYCLE_TESTS = $(addprefix build/test-reap-,$(LIFECYCLE_PLUGINS))
 # Integration branches can supply objects used by their expanded plugins.
 LIFECYCLE_EXTRA_OBJECTS ?= build/boost-defaults.o
-.PHONY: assets launch-assets test test-shift-profiles test-faults test-boost-scale test-boost-defaults test-lifecycle
+.PHONY: assets launch-assets test test-shift-profiles test-faults test-boost-scale test-boost-defaults test-lifecycle test-warm-readiness
 
 assets: | build
 	unzip -p ../../packages/dashboard.zip BoostDeck/BoostDeck_ALL_Images.zip > build/boostdeck-base-images.zip
@@ -97,7 +97,14 @@ build/warmdeck-collector: src/workers/warm_deck_worker.c src/ipc/warm_frame.h $(
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
 build/test-warm-progress: tests/test_warm_progress.cpp src/plugins/warm_progress.h src/ipc/warm_frame.h | build
-	$(CXX) -O2 -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/ipc $< -o $@
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/ipc $< -o $@
+
+build/test-warm-readiness-plugin: tests/test_warm_readiness_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/warm_deck.cpp src/plugins/warm_progress.h src/ipc/warm_frame.h sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp -o $@
+
+test-warm-readiness: build/test-warm-progress build/test-warm-readiness-plugin
+	./build/test-warm-progress
+	./build/test-warm-readiness-plugin
 
 build/boost-test-core.o: $(CORE) $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common -c $< -o $@
@@ -156,9 +163,8 @@ test-lifecycle: $(LIFECYCLE_TESTS)
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-launch-records build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector
+test: test-warm-readiness test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-launch-records build/test-boost-preferences build/warmdeck-collector build/mgflasher build/hybriddeck-collector
 	./build/test-obd-capabilities
-	./build/test-warm-progress
 	./build/test-boost-preferences
 	./build/test-launch-timer
 	./build/test-launch-records

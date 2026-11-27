@@ -19,3 +19,7 @@ evidence for new defaults while retaining existing custom layouts.
 
 [Worker lifecycle regression coverage](docs/WORKER-LIFECYCLE.md) exercises the
 existing PR #143 process-ownership fix with production plugins and host children.
+
+WarmDeck's [independent temperature targets](docs/WARM-READINESS.md) retain fresh
+fluid states when another reading is unavailable. Its app targets are advisory;
+the display refers drivers to the vehicle's guidance instead of a generic RPM limit.

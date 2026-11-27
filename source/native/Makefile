@@ -13,8 +13,37 @@ HOST_LINK = $(CC) $(CFLAGS) -pthread -DMOST_HOST -Isrc/common -Isrc/ipc -Isrc/wo
 LIFECYCLE_PLUGINS = $(shell cat tests/lifecycle-plugins.txt)
 LIFECYCLE_TESTS = $(addprefix build/test-reap-,$(LIFECYCLE_PLUGINS))
 # Integration branches can supply objects used by their expanded plugins.
-LIFECYCLE_EXTRA_OBJECTS ?= build/boost-defaults.o
-.PHONY: assets launch-assets test test-shift-profiles test-faults test-boost-scale test-boost-defaults test-lifecycle test-warm-readiness test-launch-records test-egt test-egr test-pressure
+LIFECYCLE_EXTRA_OBJECTS ?= build/boost-defaults.o build/dpf-core.o
+.PHONY: assets launch-assets dpf-assets test-dpf test test-shift-profiles test-faults test-boost-scale test-boost-defaults test-lifecycle test-warm-readiness test-launch-records test-egt test-egr test-pressure
+
+dpf-assets:
+	$(PYTHON) ../tools/make_dpfdeck.py
+
+build/dpfdeck-collector: src/workers/dpf_deck_worker.c src/common/dpf_core.c src/common/dpf_core.h src/common/obd_capabilities.c src/common/obd_capabilities.h src/common/dpf_regen_capabilities.c src/common/dpf_regen_capabilities.h $(WORKER_COMMON) | build
+	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
+
+build/test-dpf: tests/test_dpf.c tests/fixtures/dpf_v1_frame.h src/common/dpf_core.c src/common/dpf_core.h | build
+	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -lm -o $@
+
+build/test-dpf-regen-capabilities: tests/test_dpf_regen_capabilities.c src/common/dpf_regen_capabilities.c src/common/dpf_regen_capabilities.h src/common/obd_capabilities.c src/common/obd_capabilities.h $(HEADERS) | build
+	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -o $@
+
+build/dpf-core.o: src/common/dpf_core.c src/common/dpf_core.h | build
+	$(CC) $(CFLAGS) -fPIC -Isrc/common -c $< -o $@
+
+build/test-dpf-plugin: tests/test_dpf_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/dpf_deck.cpp src/common/diagnostic_worker.h src/common/diagnostic_gateway.h src/common/gauge_preferences.h $(HEADERS) build/dpf-core.o | build
+	$(CXX) -O2 -std=gnu++98 -Wall -Wextra -Werror -fno-strict-aliasing -fno-access-control -isystem sdk -Isrc/common -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/dpf-core.o -lm -o $@
+
+build/dpf-parent-exit: tests/dpf_parent_exit.c | build
+	$(CC) $(CFLAGS) $< -o $@
+
+test-dpf: build/test-dpf build/test-obd-capabilities build/test-dpf-regen-capabilities build/test-dpf-plugin build/dpfdeck-collector build/dpf-parent-exit build/boost-deck
+	./build/test-dpf
+	./build/test-obd-capabilities
+	./build/test-dpf-regen-capabilities
+	./build/test-dpf-plugin
+	$(PYTHON) -B tests/test_dpf_transport.py
+	$(PYTHON) -B tests/test_dpf_coexistence.py
 
 assets: | build
 	unzip -p ../../packages/dashboard.zip BoostDeck/BoostDeck_ALL_Images.zip > build/boostdeck-base-images.zip
@@ -204,8 +233,7 @@ test-lifecycle: $(LIFECYCLE_TESTS)
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-pressure test-egr test-egt test-launch-records test-warm-readiness test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/warmdeck-collector build/mgflasher build/hybriddeck-collector
-	./build/test-obd-capabilities
+test: test-dpf test-pressure test-egr test-egt test-launch-records test-warm-readiness test-lifecycle test-boost-defaults test-boost-scale test-shift-profiles test-faults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/warmdeck-collector build/mgflasher build/hybriddeck-collector
 	./build/test-boost-preferences
 	./build/test-launch-timer
 	./build/test-core

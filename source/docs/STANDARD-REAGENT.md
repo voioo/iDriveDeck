@@ -120,3 +120,9 @@ at published `0c2938a` accepts a canonical decimal packet in the C locale but
 rejects those same bytes under a comma-decimal process locale. No observation
 of the actual head-unit numeric locale is available. The locale fix needs its
 own regression coverage before claiming that environment works.
+
+This combined checkout includes the independent codec fix in
+[draft #217](https://github.com/inotbarnacle/iDriveDeck/pull/217). Its host
+regressions preserve NBG7–NBG11 bytes and decoded frames in period, comma and
+multibyte-separator locales. Standalone #202 still needs that separate fix in
+a comma-decimal environment. The actual head-unit locale remains unverified.

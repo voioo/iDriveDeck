@@ -21,8 +21,8 @@ BUILD = Path(__file__).resolve().parents[1]/'build'
 
 
 class SharedGateway:
-    def __init__(self,regen=False):
-        self.regen=regen
+    def __init__(self,regen=False,reagent=False):
+        self.regen=regen;self.reagent=reagent
         self.listener=socket.socket()
         self.listener.bind(('127.0.0.1',0));self.listener.listen(8);self.listener.settimeout(.1)
         self.port=self.listener.getsockname()[1]
@@ -58,12 +58,15 @@ class SharedGateway:
                 try:
                     assert control==1 and request[:3]==b'\xf4\x12\x01' and len(request)==4,request
                     pid=request[3]
-                    assert pid in (0,0x20,0x40,0x60,0x80,5,0x7a,0x7b,0x7c,0x8b),request
-                    assert self.regen or pid not in (0x80,0x8b),request
+                    assert pid in (0,0x20,0x40,0x60,0x80,5,0x7a,0x7b,0x7c,0x85,0x8b),request
+                    assert self.regen or pid!=0x8b,request
+                    assert self.reagent or pid!=0x85,request
+                    assert self.regen or self.reagent or pid!=0x80,request
                     if pid in (0,0x20,0x40,0x60,0x80):
-                        mask={0:0x08000001,0x20:1,0x40:1,0x60:0x71 if self.regen else 0x70,0x80:0x00200000}[pid]
+                        mask={0:0x08000001,0x20:1,0x40:1,0x60:0x71 if self.regen or self.reagent else 0x70,
+                              0x80:(0x00200000 if self.regen else 0)|(0x08000000 if self.reagent else 0)}[pid]
                         answer=bytes((0x41,pid))+mask.to_bytes(4,'big')
-                    else: answer=bytes((0x41,pid))+PAYLOADS[pid]
+                    else: answer=bytes((0x41,pid))+(bytes.fromhex('07010000c88001000001') if pid==0x85 else PAYLOADS[pid])
                     with self.lock:
                         self.active+=1;self.maximum=max(self.maximum,self.active)
                         self.requests.append((time.monotonic(),pid))
@@ -89,8 +92,9 @@ def busy(port):
 
 
 class DpfCoexistenceTest(unittest.TestCase):
-    def handoff(self,abnormal,regen=False):
-        with SharedGateway(regen) as gateway,telemetry_socket() as dpf_udp,telemetry_socket() as boost_udp:
+    def handoff(self,abnormal,regen=False,reagent=False):
+        boost_signal=55 if reagent else 7
+        with SharedGateway(regen,reagent) as gateway,telemetry_socket() as dpf_udp,telemetry_socket() as boost_udp:
             environment=dict(os.environ);environment.pop('ID6_FAKE_MOST',None)
             common=['--host','127.0.0.1','--port',str(gateway.port),'--transport','hsfz','--cycles','10000']
             dpf=boost=None
@@ -113,12 +117,13 @@ class DpfCoexistenceTest(unittest.TestCase):
                         packets['regen']=True
                 else:
                     fields=data.decode('ascii').split()
-                    self.assertEqual(fields[0],'NBG7')
-                    if int(fields[3]) & (1<<7):
-                        self.assertEqual(len(fields),5+2*31)
+                    self.assertIn(fields[0],('NBG7','NBG11') if reagent else ('NBG7',))
+                    if int(fields[3]) & (1<<boost_signal):
+                        self.assertEqual(fields[0],'NBG11' if reagent else 'NBG7')
+                        self.assertEqual(len(fields),5+2*(58 if reagent else 31))
                         self.assertEqual(fields[2],'0')  # live, not demo
                         self.assertGreater(int(fields[4]),0)
-                        self.assertEqual(float(fields[5+2*7]),82)
+                        self.assertAlmostEqual(float(fields[5+2*boost_signal]),128*100/255 if reagent else 82,places=5)
                         packets['boost']=True
             try:
                 command=[str(BUILD/'dpfdeck-collector'),*common,'--token','42',
@@ -130,7 +135,7 @@ class DpfCoexistenceTest(unittest.TestCase):
                     running(dpf)
                     for ready in select.select([dpf_udp],[],[],.1)[0]: receive(ready)
                 self.assertTrue(packets['dpf'],'DPF worker did not establish its initial measurement')
-                boost=subprocess.Popen([str(BUILD/'boost-deck'),*common,'--diesel','--no-trans','--signals','128',
+                boost=subprocess.Popen([str(BUILD/'boost-deck'),*common,'--diesel','--no-trans','--signals',str(1<<boost_signal),
                                         '--udp-port',str(boost_udp.getsockname()[1])],stderr=subprocess.PIPE,env=environment)
                 packets['dpf']=False
                 deadline=time.monotonic()+8
@@ -143,6 +148,7 @@ class DpfCoexistenceTest(unittest.TestCase):
                 self.assertEqual(gateway.maximum,1,'diagnostic requests overlapped instead of sharing the lease')
                 if regen:
                     self.assertTrue(all(any(pid==wanted for _,pid in gateway.requests) for wanted in (0x80,0x8b)))
+                if reagent: self.assertTrue(any(pid==0x85 for _,pid in gateway.requests))
                 if abnormal: dpf.kill()
                 else: dpf.terminate()
                 error=dpf.communicate(timeout=3)[1]
@@ -150,9 +156,10 @@ class DpfCoexistenceTest(unittest.TestCase):
                 stopped=time.monotonic()
                 self.assertFalse(busy(42868));self.assertTrue(busy(42871))
                 deadline=stopped+5
-                while not any(at>=stopped and pid==5 for at,pid in gateway.requests) and time.monotonic()<deadline:
+                survivor_pid=0x85 if reagent else 5
+                while not any(at>=stopped and pid==survivor_pid for at,pid in gateway.requests) and time.monotonic()<deadline:
                     for ready in select.select([boost_udp],[],[],.1)[0]: receive(ready)
-                self.assertTrue(any(at>=stopped and pid==5 for at,pid in gateway.requests),
+                self.assertTrue(any(at>=stopped and pid==survivor_pid for at,pid in gateway.requests),
                                 'surviving worker did not read again after the handoff')
             finally:
                 for process in (dpf,boost):
@@ -166,6 +173,7 @@ class DpfCoexistenceTest(unittest.TestCase):
     def test_handoff_after_normal_dpf_exit(self): self.handoff(False)
     def test_handoff_after_abnormal_dpf_exit(self): self.handoff(True)
     def test_optional_regeneration_reads_share_the_lease_and_handoff(self): self.handoff(False,True)
+    def test_reagent_and_regeneration_reads_share_the_lease_and_handoff(self): self.handoff(False,True,True)
 
 
 if __name__=='__main__': unittest.main()

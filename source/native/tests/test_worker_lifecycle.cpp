@@ -76,6 +76,11 @@ typedef WarmDeck Plugin;
 static pid_t& owned_pid(Plugin& p,bool) { return p.child_; }
 static void reap(Plugin& p,bool) { p.reap(); }
 static void stop(Plugin& p,bool) { p.stopWorker(); }
+#elif TEST_dpf_deck
+typedef DPFDeck Plugin;
+static pid_t& owned_pid(Plugin& p,bool) { return p.child_; }
+static void reap(Plugin& p,bool) { p.reap(); }
+static void stop(Plugin& p,bool) { p.stopWorker(); }
 #elif TEST_engine_codes
 typedef EngineCodes Plugin;
 static pid_t& owned_pid(Plugin& p,bool) { return p.codes_pid_; }
@@ -174,13 +179,15 @@ static void real_process(Plugin& p,bool tone) {
 }
 
 static void controller(Plugin& p) {
-#if TEST_boost_deck || TEST_shift_deck || TEST_warm_deck || TEST_engine_codes
+#if TEST_boost_deck || TEST_shift_deck || TEST_warm_deck || TEST_engine_codes || TEST_dpf_deck
     require(p.onInit(),"plugin initialization failed");
     wait_result=-1; wait_error=ECHILD; probe_error=0; launches=terms=0;
 #if TEST_boost_deck
     bmw::Parcel show(true); p.gaugeVisibility(show);
 #elif TEST_engine_codes
     p.startCodes(false);
+#elif TEST_dpf_deck
+    bmw::Parcel show(true); p.visibility<0>(show); p.tick();
 #else
     bmw::Parcel show(true); p.visibility(show);
 #endif
@@ -194,7 +201,7 @@ static void controller(Plugin& p) {
         now_ms+=2500; // pass the existing restart deadline on every tick
 #if TEST_boost_deck
         p.poll();
-#elif TEST_warm_deck
+#elif TEST_warm_deck || TEST_dpf_deck
         p.tick();
 #elif TEST_shift_deck
         bmw::Parcel event; event.writeUInt32(p.generation_);
@@ -208,6 +215,8 @@ static void controller(Plugin& p) {
     bmw::Parcel hide(false); p.gaugeVisibility(hide);
 #elif TEST_engine_codes
     p.stopWorker();
+#elif TEST_dpf_deck
+    bmw::Parcel hide(false); p.visibility<0>(hide); p.tick();
 #else
     bmw::Parcel hide(false); p.visibility(hide);
 #endif

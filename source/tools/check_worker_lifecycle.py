@@ -33,6 +33,11 @@ def main():
     with tempfile.TemporaryDirectory(prefix="idrive-reap-before-") as directory:
         for name in names:
             source = baseline / f"{name}.cpp"
+            if name == "dpf_deck" and not source.is_file():
+                # DPFDeck was introduced after the pinned original baseline.
+                # Candidate coverage is still required by the inventory above.
+                print("Baseline dpf_deck: absent; covered by candidate ownership tests")
+                continue
             output = Path(directory) / name
             command = compiler + ["-std=gnu++98", "-fno-access-control",
                 *[f"-I{ROOT/path}" for path in ("sdk", "src/common", "src/ipc", "src/plugins", "tests")],

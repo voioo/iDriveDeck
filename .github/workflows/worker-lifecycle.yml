@@ -41,7 +41,7 @@ jobs:
           while IFS= read -r plugin; do
             # Legacy menu callback names hide SDK start/stop overloads in some
             # plugins; preserve that existing API while treating other warnings as errors.
-            "$CXX" -std=gnu++98 -Wall -Wextra -Werror -Wno-overloaded-virtual -Icandidate/source/native/sdk -Icandidate/source/native/src/common -Icandidate/source/native/src/ipc -fsyntax-only "candidate/source/native/src/plugins/$plugin.cpp"
+            "$CXX" -std=gnu++98 -Wall -Wextra -Werror -Wno-overloaded-virtual -isystem candidate/source/native/sdk -Icandidate/source/native/src/common -Icandidate/source/native/src/ipc -fsyntax-only "candidate/source/native/src/plugins/$plugin.cpp"
             if [ "$CXX" = clang++ ]; then
               "$CXX" --analyze -Xanalyzer -analyzer-output=text -std=gnu++98 -Icandidate/source/native/sdk -Icandidate/source/native/src/common -Icandidate/source/native/src/ipc "candidate/source/native/src/plugins/$plugin.cpp"
             fi

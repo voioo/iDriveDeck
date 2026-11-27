@@ -211,6 +211,7 @@ test: test-pressure test-egr test-egt test-launch-records test-warm-readiness te
 	./build/test-core
 	./build/test-most
 	./build/test-diag-link
+	$(PYTHON) -B tests/test_udp_ports.py
 	$(PYTHON) -B tests/test_drive_apps.py
 	$(PYTHON) -B tests/test_oneshot_most.py
 	$(PYTHON) -B tests/test_obd_faults.py

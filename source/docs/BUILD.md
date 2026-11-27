@@ -15,6 +15,11 @@ HSFZ/MOST responses do not establish QNX ABI or physical vehicle compatibility.
 The native suite includes [LaunchDeck record-file and read-error checks](LAUNCH-RECORDS.md).
 Run just these checks with `make -C native test-launch-records`.
 
+Host telemetry receivers use `tests/udp_test_socket.py` to avoid the project's
+IPC ports. Tests that exercise HUD sharing, diagnostic leases or activity
+markers still bind those roles explicitly. The host suite forces both kinds
+of allocation and checks that rejected receiver sockets are closed.
+
 ## Native payload
 
 ### Obtaining the QNX toolchain

@@ -83,10 +83,10 @@ still applies. A failed save retains the prior choice and shows a persistent
 warning. Existing preferences, layouts and detected/custom mode keep their bytes.
 The emulator validates and preserves R1 alongside G/B/D records in its own files.
 
-Surface **v5 (`ID6W`), 496 bytes** carries the range and units explicitly. Boost
+Surface **v6 (`ID6X`), 496 bytes** carries the range and units explicitly. Boost
 uses `shift_target` for the maximum in bar (zero for gasoline) and `launch_mode`
 for pressure units. Tach animation owns `tach_visual` and cannot alter those
-fields. Versions 1–4 are rejected. Rebuild the complete matching full-screen
+fields. Versions 1–5 are rejected. Rebuild the complete matching full-screen
 bundle, including renderer, plugins, workers, optional companions and emulator
 parts; preserve the entire previous bundle and settings for rollback. This
 source builds on [fork telemetry #5](https://github.com/voioo/iDriveDeck/pull/5).

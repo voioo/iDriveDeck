@@ -1,5 +1,25 @@
 # Diesel compatibility investigation
 
+Full-screen fault checkpoint, 28 November: this branch implements the masked
+BMW/DDE-raw display, separate OBD emissions read categories, completed snapshots,
+worker retirement, explicit expiring clear confirmation and private E1 settings
+in the full-screen app and native fallback. The canonical worker and C/C++ text
+parser are shared. Surface v6 requires a complete matching bundle. Focused
+production callbacks, emulator and five-panel C rendering pass, along with the
+worker transport oracles, menu contracts and four GCC/Clang syntax variants.
+Library static analysis reports no diagnostics. The full host run passes 43
+native programs and 196 Python cases (including six resource cases). The 16
+focused resource cases include those six, giving 206 distinct Python cases
+across the two runs. Eight fault programs and ten full-screen worker transport
+cases also pass ASan/UBSan. The actual C renderer's labeled synthetic raw/OBD
+previews were inspected. No QNX or vehicle result is claimed.
+
+Work in progress belongs on the fork; upstream PRs should be ready for review.
+The current fault review is [fork #7](https://github.com/voioo/iDriveDeck/pull/7).
+This follow-up stays on `diesel/fullscreen-fault-status` so the original upstream
+draft #204 and its shared head remain unchanged pending the owner's cleanup
+choice. Earlier entries below record historical checkpoints, not current CI.
+
 Workflow update, 28 November: the owner clarified that draft development reviews
 belong on the fork. Upstream PRs are opened only when ready for review. This
 supersedes earlier draft-upstream wording below. Fork #2–#8 now hold the working

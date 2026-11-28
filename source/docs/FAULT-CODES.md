@@ -1,5 +1,62 @@
 # Engine fault-code handling
 
+## Full-screen app
+
+The full-screen app now shares the standard worker and strict C/C++ text parser.
+Its first opening performs the ordinary BMW read with status-mask metadata.
+**Read BMW codes** refreshes it. Completed results are labelled **Last read** and
+remain snapshots when returning from a menu. Leaving an unfinished read cancels
+it; returning does not silently repeat the request. Select a read action to retry.
+Both the C renderer and native RHMI fallback preserve all six BMW digits and
+interpret only supported status bits.
+
+Use **OPTIONS → Fault display and emissions reads** to select **DDE / raw BMW
+codes**, retain the legacy gasoline reference descriptions, or request a standard
+confirmed, pending or permanent emissions category. The reference display is
+labelled explicitly. Raw BMW rows expose the status and availability mask without
+consulting the gasoline table. OBD rows retain their P/C/B/U code and selected
+category independently of the display profile; permanent-code removal is
+identified as ECU-controlled. These choices do not establish ECU applicability
+or add any diagnostic identifiers or description data.
+
+The full-screen app saves its own four-byte E1 preference in
+`/var/opt/hmi/data/ID5/ID6LibraryLab.codes.prefs`. On a physical first start only,
+an absent full-screen preference can import the standard `EngineCodes.prefs`
+without modifying it. An unreadable or malformed file selects raw output.
+Missing files retain the legacy reference default. A failed save keeps the
+previous profile and reports the failure. Private host fixtures never import
+the physical app's path. IDEmu uses its own shared-memory file and host
+`library-codes.prefs`; the four existing Boost bridge records remain unchanged.
+
+Each read owns its pipe and result category. A replacement waits for the previous
+worker to exit, including cleanup after stdout EOF. The bounded buffer fits all
+128 BMW records with masks. Overflow or an incomplete final line is marked as
+incomplete output; a cut-off record cannot become a valid legacy record.
+
+**Clear codes** opens a separate confirmation page for BMW fault memory. Only its
+confirmation callback queues `--clear --confirm-clear --status-mask`. The queued
+confirmation expires after five seconds if the previous worker cannot retire;
+the app sends no command on expiry. This does not cancel a clear already sent.
+Read actions, profile choices and finalization cancel an unconsumed confirmation.
+The popup explains that permanent emissions codes are ECU-controlled.
+
+The matching surface protocol is **v6 (`ID6X`), 496 bytes**. On the fault page,
+`launch_mode` carries BMW=0 or OBD=3/7/10, and `boost_style` carries reference=0 or
+raw=1. Other pages retain their existing meanings. Versions 1–5 are rejected.
+Rebuild the complete Library, workers, renderer, dashboard/companion plugins,
+layouts and emulator from fresh output. Keep the complete previous bundle and
+settings for rollback; do not mix revisions.
+
+`make -C source/native test-faults` runs the production full-screen callbacks,
+emulator path, C rasterizer on five panels, canonical worker transport oracles
+and standard fault regressions. The preview below uses synthetic production
+updates. Licensed QNX/ARM builds, real DDE evidence and parked HMI/vehicle checks
+remain pending; no physical command or N57 compatibility is claimed.
+
+![Synthetic full-screen raw fault view](images/fault-fullscreen-host-synthetic.png)
+
+## Shared BMW read format
+
 Engine Fault Codes reads the engine ECU at address `12` with `19 02 AF`.
 Codes remain six hexadecimal digits, including leading zeroes. A 24-bit BMW
 UDS code is not automatically an OBD-II P-code; no identifier is shortened or

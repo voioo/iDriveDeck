@@ -88,8 +88,8 @@ host fakes are linked but not executed. All outputs are private and removed afte
 the test. This is not a QNX build or a substitute for licensed
 toolchain/framework inputs.
 
-The surface protocol is **v5 (`ID6W`), 496 bytes**. It retains measured Warm/Shift
-states and names the expanded Boost channels, empty slots and rail range/units. Versions 1–4 are
+The surface protocol is **v6 (`ID6X`), 496 bytes**. It retains measured Warm/Shift
+states and names the expanded Boost channels, empty slots and rail range/units. Versions 1–5 are
 rejected. Rebuild the complete matching bundle from fresh output: Library,
 workers, renderer, all app/optional companion plugins, layouts and emulator
 components. This work builds on [ShiftDeck](https://github.com/voioo/iDriveDeck/pull/4)

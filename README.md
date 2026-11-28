@@ -28,6 +28,12 @@ Full-screen ID6 adds **My Vehicle → ID6 App Updates**. That menu will be used 
 
 [Build and release source](source/docs/RELEASE-BUILD.md) covers the standard NBT Evo apps, full-screen apps, and EntryNav2 ports.
 
+The unreleased [fault-code source changes](source/docs/FAULT-CODES.md) add masked
+BMW status, a DDE/raw display and separate standard emissions reads to the
+standard and full-screen NBT Evo apps. Full-screen changes require rebuilding the
+complete matching bundle. They are host-tested source; the download above does
+not include them, and exact N57/QNX/parked validation remains outstanding.
+
 ## Features
 
 

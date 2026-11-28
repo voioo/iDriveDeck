@@ -4,6 +4,7 @@
 #define ID6_EMULATOR 1
 #include "boost_files.h"
 #include "boost_config.h"
+#include "fault_files.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -14,11 +15,11 @@
 #include <unistd.h>
 
 static const char hex[] = "0123456789abcdef";
-static const char *const preference_paths[] = {ID6_BOOST_PREFS, ID6_BOOST_LAYOUT, ID6_BOOST_DEFAULTS, ID6_BOOST_RAIL_SCALE};
+static const char *const preference_paths[] = {ID6_BOOST_PREFS, ID6_BOOST_LAYOUT, ID6_BOOST_DEFAULTS, ID6_BOOST_RAIL_SCALE, ID6_CODES_PREFS};
 
 static void receive_preferences(const char *line)
 {
-    if (strlen(line)<10 || line[8]<'0' || line[8]>'3' || line[9]!=' ') return;
+    if (strlen(line)<10 || line[8]<'0' || line[8]>'4' || line[9]!=' ') return;
     const unsigned kind=(unsigned)(line[8]-'0');
     const size_t encoded=strlen(line+10);
     if (encoded%2 || encoded>50) return;
@@ -39,9 +40,9 @@ static void receive_preferences(const char *line)
 
 static void send_preferences(int port)
 {
-    static unsigned char previous[4][25];
-    static unsigned previous_sizes[4];
-    for (unsigned kind=0;kind<4;++kind) {
+    static unsigned char previous[5][25];
+    static unsigned previous_sizes[5];
+    for (unsigned kind=0;kind<5;++kind) {
         unsigned char data[26];
         const int fd=open(preference_paths[kind],O_RDONLY);
         if (fd<0) continue;

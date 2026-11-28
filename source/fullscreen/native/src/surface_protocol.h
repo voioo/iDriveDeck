@@ -11,8 +11,8 @@ enum surface_page {
     surface_update_confirm, surface_install_confirm, surface_hidden
 };
 enum { surface_text_size = 36 };
-// Version 5 adds the Boost diesel rail range/units, retaining 496 bytes.
-enum { surface_magic = 0x49443657 };
+// Version 6 adds the fault result service and display profile, retaining 496 bytes.
+enum { surface_magic = 0x49443658 };
 enum { surface_warm_unknown, surface_warm_pending, surface_warm_met };
 enum { surface_bm3=40, surface_mg, surface_xdrive, surface_hybrid };
 
@@ -24,7 +24,7 @@ struct surface_state {
     uint32_t magic;
     uint32_t page;
     uint32_t selection;
-    uint32_t launch_mode; /* Boost: pressure units 0..2. */
+    uint32_t launch_mode; /* Boost: pressure units 0..2. Codes: BMW=0, OBD=3/7/10. */
     uint32_t lamps;
     uint32_t road_mode;
     uint32_t road_distance;
@@ -36,7 +36,8 @@ struct surface_state {
     char status[96];
     uint16_t boost_level[9]; /* Warm: progress. Shift: [0] display RPM, [1] RPM+1 (0 unknown). */
     uint8_t boost_signal[9]; /* Warm: states. Shift: [0] gasoline/diesel, [1] save failure. */
-    uint8_t boost_style, boost_color, launch_run_state, warm_fahrenheit, road_has_scene;
+    uint8_t boost_style; /* Codes: gasoline reference=0, DDE/raw=1. */
+    uint8_t boost_color, launch_run_state, warm_fahrenheit, road_has_scene;
 };
 
 /* The pipe delivers each state atomically even on hosts with the POSIX minimum. */

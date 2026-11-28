@@ -129,14 +129,14 @@ suppresses lights. The physical gear remains unknown; IDEmu's P/R/N/D is simulat
 LaunchDeck's speed-only path uses the same matching frame and source socket.
 The standard app's worker and 16-byte protocol remain unchanged.
 
-The shared renderer protocol is **v5 (`ID6W`), 496 bytes**. It carries explicit
+The shared renderer protocol is **v6 (`ID6X`), 496 bytes**. It carries explicit
 profile, scale and raw RPM fields; rounded display text cannot trigger a light.
 It retains #209's measured Warm states and names the expanded Boost channels.
 The Shift implementation depends on
 [WarmDeck #209](https://github.com/inotbarnacle/iDriveDeck/pull/209). Rebuild the
 complete matching full-screen bundle from fresh outputs: Library, Shift/Launch
 worker, renderer, all dashboard/optional companion plugins and emulator parts.
-Surface v1/v2/v3/v4 and older 16-byte worker frames are rejected. Keep the entire
+Surface v1/v2/v3/v4/v5 and older 16-byte worker frames are rejected. Keep the entire
 previous bundle and settings backups for rollback; do not mix revisions.
 No compatibility profile or packaged native binary is added here.
 

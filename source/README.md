@@ -37,3 +37,7 @@ the display refers drivers to the vehicle's guidance instead of a generic RPM li
 
 For a reviewed request plan, offline sanitized reports and the staged diesel
 vehicle checks, see [Diesel discovery and validation](docs/DIESEL-VALIDATION.md).
+
+WarmDeck's [independent temperature targets](docs/WARM-READINESS.md) retain fresh
+fluid states when another reading is unavailable. Its app targets are advisory;
+the display refers drivers to the vehicle's guidance instead of a generic RPM limit.

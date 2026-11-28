@@ -46,6 +46,7 @@ output.write_text('Host build-input fixture. Do not distribute or install.\\n')
             QNX_CONFIGURATION=str(inputs/'unused configuration'),NBTEVO_FRAMEWORKS_DIR=str(frameworks),
             NBTEVO_RUNTIME_DIR=str(runtime),QNX_OPENSSL_DIR=str(inputs/'unused openssl'),
             ID6_STANDARD_NATIVE_DIR='',FULL_BUILD_INPUTS_LOG=str(self.log),FULL_BUILD_INPUTS_FAIL='')
+        self.env['QNX_SCREEN_POPEN_OBJECT']=''
 
     def run_driver(self):
         result=subprocess.run(['sh',str(self.native/'build.sh')],env=self.env,capture_output=True,text=True,timeout=30)
@@ -95,6 +96,30 @@ output.write_text('Host build-input fixture. Do not distribute or install.\\n')
             result=subprocess.run(shlex.split(os.environ.get('CC','cc'))+host_args,
                 cwd=self.screen,capture_output=True,text=True,timeout=60)
             self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_renderer_emitted_core_dependency_links_and_is_required(self):
+        result,commands=self.run_driver();self.assertEqual(result.returncode,0,result.stderr)
+        objects={args[args.index('-o')+1]:args[args.index('-c')+1] for args in commands if '-c' in args}
+        matches=[args for args in commands if 'native/src/surface_draw.c' in args]
+        self.assertEqual(len(matches),1)
+        args=matches[0];self.assertIn('native/out/gauge_core.o',args)
+        output_index=args.index('-o');host_args=[]
+        for index,arg in enumerate(args):
+            if index in (output_index,output_index+1): continue
+            if arg.startswith(('-V','-Wc,')) or arg in ('-mno-unaligned-access','-lsocket','-lscreen','-Lnative/out/link','-Wl,--allow-shlib-undefined'): continue
+            if arg in ('native/src/fullscreen.c','native/src/layer_manager.c'): continue
+            host_args.append(objects.get(arg,arg))
+        host_args+=['-std=c99','-fPIC','-shared','-I'+str(FULL/'src'),
+                    str(FULL.parent/'emulator/host_surface.c'),'-Wl,--no-undefined','-lm']
+        compiler=shlex.split(os.environ.get('CC','cc'))
+        result=subprocess.run(compiler+host_args+['-o',str(self.root/'renderer.so')],
+            cwd=self.screen,capture_output=True,text=True,timeout=60)
+        self.assertEqual(result.returncode,0,result.stderr)
+        missing=[arg for arg in host_args if arg!=objects['native/out/gauge_core.o']]
+        result=subprocess.run(compiler+missing+['-o',str(self.root/'missing-core.so')],
+            cwd=self.screen,capture_output=True,text=True,timeout=60)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('bd_display_selected',result.stderr)
 
     def test_failed_compiler_stops_before_later_commands(self):
         self.env['FULL_BUILD_INPUTS_FAIL']='1'

@@ -11,8 +11,8 @@ enum surface_page {
     surface_update_confirm, surface_install_confirm, surface_hidden
 };
 enum { surface_text_size = 36 };
-// Version 4 retains Warm/Shift states and names all 58 Boost channels/empty slots.
-enum { surface_magic = 0x49443656 };
+// Version 5 adds the Boost diesel rail range/units, retaining 496 bytes.
+enum { surface_magic = 0x49443657 };
 enum { surface_warm_unknown, surface_warm_pending, surface_warm_met };
 enum { surface_bm3=40, surface_mg, surface_xdrive, surface_hybrid };
 
@@ -24,14 +24,14 @@ struct surface_state {
     uint32_t magic;
     uint32_t page;
     uint32_t selection;
-    uint32_t launch_mode;
+    uint32_t launch_mode; /* Boost: pressure units 0..2. */
     uint32_t lamps;
     uint32_t road_mode;
     uint32_t road_distance;
     uint32_t road_lane;
     uint32_t road_altitude;
-    uint32_t shift_target;
-    uint32_t tach_visual; /* RPM plus one, or zero for the current sample. */
+    uint32_t shift_target; /* Boost: diesel rail maximum in bar, or zero for gasoline. */
+    uint32_t tach_visual; /* Shift: RPM+1, or zero to use the current sample. */
     char values[9][surface_text_size];
     char status[96];
     uint16_t boost_level[9]; /* Warm: progress. Shift: [0] display RPM, [1] RPM+1 (0 unknown). */

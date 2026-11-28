@@ -39,6 +39,12 @@ class FullBoostResources(unittest.TestCase):
             for action in (5850,5851):
                 self.assertIsNotNone(tree.find(".//hmiState[@id='214']/components/button[@action='%d']"%action))
                 self.assertIsNotNone(tree.find(".//actions/raAction[@id='%d']"%action))
+            self.assertIsNotNone(tree.find(".//hmiState[@id='214']/components/button[@action='2190'][@model='1850']"))
+            scale=tree.find(".//hmiState[@id='2190']/components")
+            self.assertIsNotNone(scale)
+            for choice in range(4):
+                self.assertIsNotNone(scale.find("button[@action='%d'][@model='%d']"%(4870+choice,1851+choice)))
+                self.assertEqual(tree.find(".//combinedAction[@id='%d']/actions/raAction"%(4870+choice)).get('id'),str(5870+choice))
             for model in (1830,1831,*range(1840,1849)):
                 self.assertIsNotNone(tree.find(".//models/raDataModel[@id='%d']"%model))
             state=tree.find(".//hmiState[@id='200']")
@@ -68,21 +74,23 @@ class FullBoostResources(unittest.TestCase):
                 (0,b'G\x01\x08\x01',True),(0,b'G\x01\x08\x02',False),
                 (0,b'G\x02\x08'+bytes(7)+b'\x0c',True),
                 (0,b'G\x02\x08'+bytes(7)+b'\x0d',False),
-                (2,b'D\x01\0',True),(2,b'D\x01\x01',True),(2,b'D\x01\x02',False)))
+                (2,b'D\x01\0',True),(2,b'D\x01\x01',True),(2,b'D\x01\x02',False),
+                (3,b'R\x01\0',True),(3,b'R\x01\x03',True),(3,b'R\x01\x04',False),
+                (3,b'R\x02\0',False),(3,b'R\x01\0\0',False)))
             for kind,data,expected in cases:
                 self.assertEqual(bool(native.validate(kind,ctypes.create_string_buffer(data),len(data))),expected)
                 self.assertEqual(overlay.LibraryOverlay._valid_config(kind,data),expected)
             randomizer=random.Random(728)
             for _ in range(500):
-                kind=randomizer.randrange(4);data=bytes(randomizer.randrange(256) for _ in range(randomizer.randrange(28)))
+                kind=randomizer.randrange(5);data=bytes(randomizer.randrange(256) for _ in range(randomizer.randrange(28)))
                 self.assertEqual(bool(native.validate(kind,ctypes.create_string_buffer(data),len(data))),
                                  overlay.LibraryOverlay._valid_config(kind,data))
 
     def test_overlay_preserves_versions_and_default_mode_in_private_files(self):
         with tempfile.TemporaryDirectory() as directory:
             instance=overlay.LibraryOverlay.__new__(overlay.LibraryOverlay)
-            instance._config=tuple(Path(directory)/name for name in ('prefs','layout','mode'))
-            for kind,data in ((1,b'B\x06\x01'+bytes((57,))*18),(2,b'D\x01\0')):
+            instance._config=tuple(Path(directory)/name for name in ('prefs','layout','mode','scale'))
+            for kind,data in ((1,b'B\x06\x01'+bytes((57,))*18),(2,b'D\x01\0'),(3,b'R\x01\x03')):
                 instance._save_config(f'ID6CONF {kind} {data.hex()}\n'.encode())
                 self.assertEqual(instance._config[kind].read_bytes(),data)
                 instance._save_config(f'ID6CONF {kind} 00\n'.encode())

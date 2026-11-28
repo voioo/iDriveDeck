@@ -59,6 +59,7 @@ worker road-jet-qnx "$telemetry/workers/road_jet_worker.c"
 cp -R native/generated/layouts native/out/
 test -f native/out/link/libscreen.so || { echo "Full-screen build requires the libscreen.so.1 link input" >&2; exit 1; }
 c -Inative/sdk -Inative/generated -I"$telemetry/ipc" -I"$telemetry/common" -D_QNX_SOURCE -O2 native/src/fullscreen.c native/src/surface_draw.c native/src/layer_manager.c \
+    native/out/gauge_core.o \
     ${QNX_SCREEN_POPEN_OBJECT:+"$QNX_SCREEN_POPEN_OBJECT"} -Lnative/out/link -lscreen -lsocket -Wl,--allow-shlib-undefined \
     -o native/out/ID6LibraryLab/id6-library-fullscreen-qnx
 : "${QNX_OPENSSL_DIR:?Set the directory containing QNX ARM OpenSSL include/ and lib/}"

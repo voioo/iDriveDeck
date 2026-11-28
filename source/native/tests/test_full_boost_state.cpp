@@ -32,9 +32,10 @@ static void same(const char* path,const unsigned char* expected,size_t size) {
 int main() {
     assert(BD_COUNT==58 && sizeof(bd_mask)==8);
     char directory[]="/tmp/full-boost-state.XXXXXX";assert(mkdtemp(directory));
-    char layout_path[128],mode_path[128];
+    char layout_path[128],mode_path[128],scale_path[128];
     snprintf(layout_path,sizeof layout_path,"%s/layout",directory);
     snprintf(mode_path,sizeof mode_path,"%s/mode",directory);
+    snprintf(scale_path,sizeof scale_path,"%s/scale",directory);
     for (unsigned version=1;version<=2;++version) {
         unsigned char old[25]={'B',static_cast<unsigned char>(version),1};
         const unsigned stride=version==1 ? 11 : 9;
@@ -62,15 +63,30 @@ int main() {
         same(layout_path,bytes,length);
     }
 #ifdef __GLIBC__
-    for (unsigned reader=0;reader<3;++reader) {
+    for (unsigned reader=0;reader<4;++reader) {
         read_calls=close_calls=0;
         if (reader==0) { BoostLayout loaded;assert(!loaded.load("test-error-stream")); }
         if (reader==1) { BoostPreferences loaded;loaded.load("test-error-stream",9); }
         if (reader==2) { FullBoostDefaultsMode loaded;loaded.load("test-error-stream"); }
+        if (reader==3) { FullBoostRailScale loaded;loaded.load("test-error-stream"); }
         assert(read_calls==1 && close_calls==1); // the previous read-after-error paths call twice
     }
 #endif
-    unlink(layout_path);unlink(mode_path);assert(rmdir(directory)==0);
+    for (unsigned choice=0;choice<4;++choice) {
+        FullBoostRailScale saved;saved.choice=choice;assert(saved.save(scale_path));
+        const unsigned char record[]={'R',1,static_cast<unsigned char>(choice)};
+        same(scale_path,record,sizeof record);
+        FullBoostRailScale loaded;loaded.load(scale_path);assert(loaded.choice==choice);
+        same(scale_path,record,sizeof record);
+    }
+    const unsigned char invalid[][4]={{'R',2,0,0},{'R',1,4,0},{'R',1,0,0},{'R',1,0,0}};
+    const unsigned sizes[]={3,3,4,2};
+    for (unsigned i=0;i<4;++i) {
+        assert(savePersistentBytes(scale_path,invalid[i],sizes[i]));
+        FullBoostRailScale loaded;loaded.choice=1;loaded.load(scale_path);assert(loaded.choice==1);
+        same(scale_path,invalid[i],sizes[i]);
+    }
+    unlink(layout_path);unlink(mode_path);unlink(scale_path);assert(rmdir(directory)==0);
 
     FullBoostState state;state.reset(1000);
     bd_frame frame;memset(&frame,0,sizeof frame);frame.sent_ms=1000;

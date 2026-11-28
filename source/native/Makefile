@@ -175,16 +175,16 @@ build/full-warm-core.o: $(FULLSCREEN_NATIVE)/telemetry/common/gauge_core.c $(FUL
 build/full-warm-launch.o: $(FULLSCREEN_NATIVE)/telemetry/common/launch_timer.c $(FULLSCREEN_NATIVE)/telemetry/common/launch_timer.h | build
 	$(CC) $(CFLAGS) $(FULL_WARM_INCLUDES) -c $< -o $@
 
-build/test-full-warm-plugin: tests/test_full_warm_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/telemetry/common/*.h) $(FULLSCREEN_NATIVE)/telemetry/ipc/drive_frame.h src/plugins/shift_preferences.h src/plugins/warm_progress.h src/plugins/boost_defaults_mode.h $(FULLSCREEN_NATIVE)/generated/boost_settings_assets.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o | build
+build/test-full-warm-plugin: tests/test_full_warm_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/telemetry/common/*.h) $(FULLSCREEN_NATIVE)/telemetry/ipc/drive_frame.h src/plugins/shift_preferences.h src/plugins/warm_progress.h src/plugins/boost_defaults_mode.h $(FULLSCREEN_NATIVE)/generated/boost_settings_assets.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o src/plugins/boost_rail_scale.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -fno-access-control -fno-strict-aliasing -DFAKE_BMW_NO_BOOL_MODEL $(FULL_WARM_INCLUDES) -Itests $< tests/fake_bmw.cpp build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o -lm -o $@
 
-build/test-full-warm-surface: tests/test_full_warm_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) build/full-warm-core.o | build
+build/test-full-warm-surface: tests/test_full_warm_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) build/full-warm-core.o $(FULLSCREEN_NATIVE)/src/boost_scale_label.h | build
 	$(CC) $(CFLAGS) $(FULL_WARM_INCLUDES) $< build/full-warm-core.o -lm -o $@
 
 build/test-full-surface-session: tests/test_full_surface_session.cpp $(FULLSCREEN_NATIVE)/src/surface_session.h $(FULLSCREEN_NATIVE)/src/surface_protocol.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -fno-access-control $(FULL_WARM_INCLUDES) $< -o $@
 
-build/full-warm-surface.so: $(FULLSCREEN_NATIVE)/../emulator/host_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/telemetry/common/gauge_core.c $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_animation.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) src/common/gauge_core.c $(FULL_SHARED_HEADERS) | build
+build/full-warm-surface.so: $(FULLSCREEN_NATIVE)/../emulator/host_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/telemetry/common/gauge_core.c $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_animation.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) src/common/gauge_core.c $(FULL_SHARED_HEADERS) $(FULLSCREEN_NATIVE)/src/boost_scale_label.h | build
 	$(CC) $(CFLAGS) -fPIC -shared $(FULL_WARM_INCLUDES) $(FULLSCREEN_NATIVE)/../emulator/host_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/telemetry/common/gauge_core.c -Wl,--no-undefined -lm -o $@
 
 test-full-warm: build/test-full-warm-plugin build/test-full-warm-surface build/test-full-surface-session
@@ -214,20 +214,20 @@ build/test-shift-profile-plugin: tests/test_shift_profile_plugin.cpp tests/fake_
 build/test-full-shift-state: tests/test_full_shift_state.cpp $(FULLSCREEN_NATIVE)/src/shift_state.h src/plugins/shift_preferences.h src/plugins/shift_assets.h $(FULLSCREEN_NATIVE)/telemetry/common/gauge_preferences.h $(FULLSCREEN_NATIVE)/telemetry/ipc/drive_frame.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror $(FULL_WARM_INCLUDES) $< -o $@
 
-build/test-full-shift-surface: tests/test_full_shift_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) build/full-warm-core.o | build
+build/test-full-shift-surface: tests/test_full_shift_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/src/surface_draw.h $(FULLSCREEN_NATIVE)/src/surface_shift.h $(FULLSCREEN_NATIVE)/src/surface_protocol.h $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) build/full-warm-core.o $(FULLSCREEN_NATIVE)/src/boost_scale_label.h | build
 	$(CC) $(CFLAGS) $(FULL_WARM_INCLUDES) $< build/full-warm-core.o -lm -o $@
 
-build/test-full-shift-plugin: tests/test_full_shift_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/telemetry/common/*.h) $(FULLSCREEN_NATIVE)/telemetry/ipc/drive_frame.h src/plugins/shift_preferences.h src/plugins/warm_progress.h src/plugins/boost_defaults_mode.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o | build
+build/test-full-shift-plugin: tests/test_full_shift_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/telemetry/common/*.h) $(FULLSCREEN_NATIVE)/telemetry/ipc/drive_frame.h src/plugins/shift_preferences.h src/plugins/warm_progress.h src/plugins/boost_defaults_mode.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o src/plugins/boost_rail_scale.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -fno-access-control -fno-strict-aliasing -DFAKE_BMW_NO_BOOL_MODEL $(FULL_WARM_INCLUDES) -Itests $< tests/fake_bmw.cpp build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o -lm -o $@
 
-build/test-full-boost-state: tests/test_full_boost_state.cpp $(FULLSCREEN_NATIVE)/src/boost_state.h $(FULLSCREEN_NATIVE)/src/boost_layout.h $(FULLSCREEN_NATIVE)/src/boost_preferences.h $(FULLSCREEN_NATIVE)/src/fullscreen_preferences.h src/plugins/boost_defaults_mode.h build/full-warm-core.o build/boost-defaults.o | build
+build/test-full-boost-state: tests/test_full_boost_state.cpp $(FULLSCREEN_NATIVE)/src/boost_state.h $(FULLSCREEN_NATIVE)/src/boost_layout.h $(FULLSCREEN_NATIVE)/src/boost_preferences.h $(FULLSCREEN_NATIVE)/src/fullscreen_preferences.h src/plugins/boost_defaults_mode.h build/full-warm-core.o build/boost-defaults.o src/plugins/boost_rail_scale.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror $(FULL_WARM_INCLUDES) $< build/full-warm-core.o build/boost-defaults.o -lm -o $@
 
-build/test-full-boost-plugin: tests/test_full_boost_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) $(FULL_SHARED_HEADERS) src/plugins/boost_defaults_mode.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o | build
+build/test-full-boost-plugin: tests/test_full_boost_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(FULLSCREEN_NATIVE)/src/library.cpp $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) $(FULL_SHARED_HEADERS) src/plugins/boost_defaults_mode.h build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o src/plugins/boost_rail_scale.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -fno-access-control -fno-strict-aliasing -DFAKE_BMW_NO_BOOL_MODEL $(FULL_WARM_INCLUDES) -Itests $< tests/fake_bmw.cpp build/full-warm-core.o build/full-warm-launch.o build/boost-defaults.o -lm -o $@
 
-build/test-full-boost-surface: tests/test_full_boost_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) $(FULL_SHARED_HEADERS) build/full-warm-core.o | build
-	$(CC) $(CFLAGS) $(FULL_WARM_INCLUDES) $< build/full-warm-core.o -lm -o $@
+build/test-full-boost-surface: tests/test_full_boost_surface.c $(FULLSCREEN_NATIVE)/src/surface_draw.c $(FULLSCREEN_NATIVE)/../emulator/host_surface.c $(wildcard $(FULLSCREEN_NATIVE)/src/*.h) $(wildcard $(FULLSCREEN_NATIVE)/generated/*.h) $(FULL_SHARED_HEADERS) build/full-warm-core.o | build
+	$(CC) $(CFLAGS) $(FULL_WARM_INCLUDES) -I$(FULLSCREEN_NATIVE)/../emulator $< build/full-warm-core.o -lm -o $@
 
 test-full-boost: build/test-full-boost-state build/test-full-boost-plugin build/test-full-boost-surface build/full-boost-deck build/full-warm-collector
 	./build/test-full-boost-state

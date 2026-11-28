@@ -8,6 +8,7 @@
 #include "launch_timer.h"
 #include "surface_shift.h"
 #include "gauge_core.h"
+#include "boost_scale_label.h"
 #include "dme_descriptions.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -362,9 +363,8 @@ static void dial(struct canvas c, int cx, int cy, unsigned level, unsigned color
     }
 }
 
-static int boost_text_size(const char* value,unsigned signal,int size,int width)
+static int boost_text_size(const char* value,int size,int width)
 {
-    if (signal<BD_LEGACY_COUNT) return size;
     while (size>11 && word_width(value,size)>width) --size;
     return size;
 }
@@ -385,22 +385,33 @@ static void draw_boost(struct canvas c, const struct surface_state *s)
         const char *label=signal<COUNT(boost_names) ? boost_names[signal][column] : "--";
         unsigned level=signal<COUNT(boost_names) && s->boost_level[i]<=1000 ? s->boost_level[i] : 0;
         const char* reading=signal<COUNT(boost_names) ? value(s,i) : "--";
+        char rail_label[40];
+        const bool diesel_rail=signal==BD_RAIL && s->shift_target!=0;
+        if (diesel_rail) {
+            if (full_boost_rail_caption(rail_label,sizeof rail_label,s->shift_target,s->launch_mode)) label=rail_label;
+            else { reading="--";level=0; }
+        }
+        const bool fit=signal>=BD_LEGACY_COUNT || diesel_rail;
+        const int label_size=s->boost_style ? 15 : 17;
+        const int caption_size=fit ? boost_text_size(label,label_size,w-18) : label_size;
         card(c,x,y,w,h,false);
         if (s->boost_style) {
             int center_x=x+w/2, center_y=y+(column ? 75 : 44);
-            center(c,center_x,y+3,label,muted,boost_text_size(label,signal,15,w-18));
+            center(c,center_x,y+3,label,muted,caption_size);
             dial(c,center_x,center_y,level,color);
-            center(c,center_x,center_y-8,reading,bright,word_width(reading,18)>55 ? 12 : 18);
+            int size=word_width(reading,18)>55 ? 12 : 18;
+            if (fit) size=boost_text_size(reading,size,55);
+            center(c,center_x,center_y-8,reading,bright,size);
         } else {
-            text(c,x+9,y+5,label,muted,boost_text_size(label,signal,17,w-18));
+            text(c,x+9,y+5,label,muted,caption_size);
             if (column) {
                 rounded(c,x+28,y+29,22,95,frame);
                 int height=(int)(95*level/1000);
                 if (height>=6) rounded(c,x+28,y+124-height,22,height,color);
                 else if (height) fill(c,x+28,y+124-height,22,height,color);
-                center(c,x+w/2,y+126,reading,bright,boost_text_size(reading,signal,22,w-18));
+                center(c,x+w/2,y+126,reading,bright,fit ? boost_text_size(reading,22,w-18) : 22);
             } else {
-                text(c,x+9,y+25,reading,bright,boost_text_size(reading,signal,24,w-18));
+                text(c,x+9,y+25,reading,bright,fit ? boost_text_size(reading,24,w-18) : 24);
                 rounded(c,x+9,y+58,w-18,6,frame);
                 int width=(int)((w-18)*level/1000);
                 if (width>=6) rounded(c,x+9,y+58,width,6,color);

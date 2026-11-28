@@ -20,6 +20,7 @@ int main(void) {
     state.magic=0x49443653;assert(!surface_packet_valid(&state,sizeof state));
     state.magic=0x49443654;assert(!surface_packet_valid(&state,sizeof state));
     state.magic=0x49443655;assert(!surface_packet_valid(&state,sizeof state));
+    state.magic=0x49443656;assert(!surface_packet_valid(&state,sizeof state));
     state.magic=surface_magic;
     strcpy(state.values[0],"85.0 C");
     strcpy(state.values[1],"75.0 C");

@@ -64,3 +64,42 @@ host checks. They do not establish QNX ABI/loader compatibility, actual HMI text
 wrapping, DDE support or an N57/X5 rail-pressure measurement. No request, response
 format, scaling, validity rule, worker packet, firmware profile or vehicle setting
 is changed by this display feature.
+
+## Full-screen BoostDeck
+
+The full-screen view offers the same four ranges in **Settings → Diesel rail
+display scale**. The choice applies to the existing rail-pressure signal in
+custom and detected layouts, including the narrow ninth tile, bars and dials.
+Range captions follow pressure units. A valid 1,000-bar reading fills half of
+the default 2,000-bar graphic; its numeric value remains 1,000 bar. Gasoline and
+all other signals retain their existing ranges.
+
+Full-screen keeps its own `ID6LibraryLab.boost.rail-scale` R1 file under the
+existing HMI data directory. An absent or invalid file leaves the 2,000-bar app
+default; the standard app's separate R1 choice is not imported. Loads do not
+rewrite files. The range action changes only this record, refreshes cached
+readings/captions and leaves a running worker intact. Normal page-focus lifecycle
+still applies. A failed save retains the prior choice and shows a persistent
+warning. Existing preferences, layouts and detected/custom mode keep their bytes.
+The emulator validates and preserves R1 alongside G/B/D records in its own files.
+
+Surface **v5 (`ID6W`), 496 bytes** carries the range and units explicitly. Boost
+uses `shift_target` for the maximum in bar (zero for gasoline) and `launch_mode`
+for pressure units. Tach animation owns `tach_visual` and cannot alter those
+fields. Versions 1–4 are rejected. Rebuild the complete matching full-screen
+bundle, including renderer, plugins, workers, optional companions and emulator
+parts; preserve the entire previous bundle and settings for rollback. This
+source builds on [fork telemetry #5](https://github.com/voioo/iDriveDeck/pull/5).
+
+Host checks exercise production callbacks and local worker traffic, every range
+and pressure unit, automatic/custom/ninth-slot layouts, zero/stale values,
+failed saves and restart persistence. The actual C renderer and its animation
+entry point are tested on five panels. Ninety gasoline renders match the preceding
+renderer (`e5ffcf2`) across both styles and all nine colors. Recorded build inputs
+also host-link the renderer's shared core dependency; omitting it fails the link.
+Those adapted host links exclude QNX Screen/LayerManager and ARM-only flags and
+do not constitute a QNX build. Focused Boost/Warm/Shift ASan/UBSan and C++98
+syntax checks pass. Full-source CI, licensed QNX/ABI and parked validation remain
+separate requirements; no vehicle result or native release payload is added.
+
+![Full-screen diesel rail scale with synthetic host data](images/rail-fullscreen-host-synthetic.png)

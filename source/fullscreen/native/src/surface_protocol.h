@@ -6,13 +6,13 @@
 
 enum surface_page {
     surface_boost, surface_shift, surface_mhd, surface_codes, surface_road,
-    surface_beamer, surface_launch, surface_warm,
+    surface_beamer, surface_launch, surface_warm, surface_dpf,
     surface_home = 9, surface_updates, surface_system,
     surface_update_confirm, surface_install_confirm, surface_hidden
 };
 enum { surface_text_size = 36 };
-// Version 6 adds the fault result service and display profile, retaining 496 bytes.
-enum { surface_magic = 0x49443658 };
+// Version 7 adds the DPF page and per-field states, retaining 496 bytes.
+enum { surface_magic = 0x49443659 };
 enum { surface_warm_unknown, surface_warm_pending, surface_warm_met };
 enum { surface_bm3=40, surface_mg, surface_xdrive, surface_hybrid };
 
@@ -35,7 +35,7 @@ struct surface_state {
     char values[9][surface_text_size];
     char status[96];
     uint16_t boost_level[9]; /* Warm: progress. Shift: [0] display RPM, [1] RPM+1 (0 unknown). */
-    uint8_t boost_signal[9]; /* Warm: states. Shift: [0] gasoline/diesel, [1] save failure. */
+    uint8_t boost_signal[9]; /* Warm/DPF: states. Shift: [0] gasoline/diesel, [1] save failure. */
     uint8_t boost_style; /* Codes: gasoline reference=0, DDE/raw=1. */
     uint8_t boost_color, launch_run_state, warm_fahrenheit, road_has_scene;
 };

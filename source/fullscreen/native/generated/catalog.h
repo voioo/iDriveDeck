@@ -7,4 +7,5 @@ static const char* const kCatalog[] = {
     "BEAMer",
     "LaunchDeck",
     "WarmDeck",
+    "DPFDeck",
 };

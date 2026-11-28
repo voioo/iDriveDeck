@@ -1,5 +1,30 @@
 # Diesel compatibility investigation
 
+Full-screen DPF checkpoint, 28 November: the isolated fork branch
+`diesel/fullscreen-dpfdeck` adds the shared monitoring worker and decoder, six
+bank-selected readings, optional regeneration status, private D1/D2 settings,
+native fallback and explicitly synthetic emulator/preview data. Connector 243
+preserves dashboard and companion IDs; DPFDeck is an explicit optional full-screen
+installer choice. Four native programs, 27 actual full-worker transport/coexistence
+cases and three resource cases pass. The full-screen MOST copy lacked the DPF
+ownership marker: two actual transport regressions failed before adding the
+standard mapping, and the complete rerun passes. The renderer uses the
+canonical five measurement states and explicit
+unavailable soot/ash/history/request/inhibition fields.
+
+All 175 tool/resource cases and 37 top-level installer cases pass, including
+five-panel staging, payload/connector gates, replacement, uninstall and rollback
+with both preference files preserved. Four full-screen programs and four
+focused worker cases pass ASan/UBSan. GCC/Clang physical/emulator syntax, guest C,
+shell syntax and zero-diagnostic Library analysis pass. Synthetic C renders were
+inspected. The complete host evidence spans 51 native test programs and 253
+Python cases across the focused and existing-native runs. The 175 tool/resource
+cases overlap nine of those, giving 419 distinct Python cases. The already
+passed full DPF target was skipped in the existing-native run. Ninety gasoline
+renders match signed `4683ea6` across five panels, two styles and nine colors.
+Surface v7 requires a fresh complete matching bundle. No QNX or physical result
+is claimed. The earlier combined `60a5690` now passes all eleven source workflows.
+
 Combined checkpoint, 28 November: `f61d611` plus the signed full-screen fault
 follow-up `4683ea6` passes 47 native test programs and 223 Python cases through
 Make, including six resource cases. All 172 tool/resource cases also pass;

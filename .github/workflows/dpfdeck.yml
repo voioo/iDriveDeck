@@ -32,6 +32,9 @@ jobs:
           printf '#include "dpf_core.h"\ntypedef char dpf_count[(DPF_COUNT == 13 && DPF_LEGACY_COUNT == 11) ? 1 : -1];\nint main() { return 0; }\n' > /tmp/dpf-header.cpp
           g++ -std=gnu++98 -Wall -Wextra -Werror -Isource/native/src/common -fsyntax-only /tmp/dpf-header.cpp
           sh -n source/native/build.sh
+          for mode in '' '-DID6_EMULATOR'; do
+            ${{ matrix.cxx }} -std=gnu++98 -Wall -Wextra -Werror -DID6_ENTRY_PAGE=surface_dpf '-DID6_PLUGIN_NAME="HostDpfSyntax"' $mode -Isource/fullscreen/native/src -Isource/fullscreen/native/generated -isystem source/fullscreen/native/sdk -Isource/fullscreen/native/telemetry/common -Isource/fullscreen/native/telemetry/ipc -Isource/native/src/common -fsyntax-only source/fullscreen/native/src/library.cpp
+          done
       - name: Memory safety and static analysis
         if: matrix.compiler == 'clang'
         run: |
@@ -55,8 +58,32 @@ jobs:
           /tmp/dpf-tools/bin/pip install Pillow==13.0.0
           /tmp/dpf-tools/bin/python -B source/tools/make_dpfdeck.py
           /tmp/dpf-tools/bin/python -B source/tools/test_dpf_resources.py
+          /tmp/dpf-tools/bin/python -B source/tools/test_full_dpf_resources.py
+          /tmp/dpf-tools/bin/python -B source/tools/test_full_warm_resources.py
+          make -C source/native build/full-warm-surface.so
+          /tmp/dpf-tools/bin/python -B source/tools/preview_full_dpf.py --renderer source/native/build/full-warm-surface.so --models source/native/build/full-dpf-models/metric-partial.bin --out /tmp/full-dpf-host-synthetic.png
           /tmp/dpf-tools/bin/python -B source/tools/preview_dpfdeck.py --models /tmp/dpf-models/bank1-live.tsv --out /tmp/dpf-bank1.png
           /tmp/dpf-tools/bin/python -B source/tools/preview_dpfdeck.py --models /tmp/dpf-models/regen-active.tsv --out /tmp/dpf-regen-active.png
+      - uses: actions/upload-artifact@v4
+        if: matrix.compiler == 'clang'
+        with:
+          name: full-dpf-host-synthetic-preview
+          path: /tmp/full-dpf-host-synthetic.png
+
+  full-memory:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Full-screen DPF callbacks, drawing and transport memory checks
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          make -C source/native build/test-full-dpf-state build/test-full-dpf-plugin build/test-full-dpf-emulator build/test-full-dpf-surface build/full-dpf-deck build/dpf-parent-exit CC=clang CXX=clang++ CFLAGS='-O1 -g -std=c99 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer' CXXFLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'
+          for program in test-full-dpf-state test-full-dpf-plugin test-full-dpf-emulator test-full-dpf-surface; do
+            source/native/build/$program
+          done
+          python3 -B source/native/tests/test_full_dpf_worker.py FullDpfTransport.test_capabilities_signed_pressure_independent_fields_and_conservative_age FullDpfTransport.test_most_owns_dashboard_marker_and_unregisters_on_exit FullDpfTransport.test_existing_most_marker_prevents_a_second_client FullDpfTransport.test_parent_exit_stops_the_real_worker_without_signalling_it
 
   installer:
     runs-on: ubuntu-24.04

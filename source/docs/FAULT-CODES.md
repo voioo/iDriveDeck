@@ -40,9 +40,9 @@ the app sends no command on expiry. This does not cancel a clear already sent.
 Read actions, profile choices and finalization cancel an unconsumed confirmation.
 The popup explains that permanent emissions codes are ECU-controlled.
 
-The matching surface protocol is **v6 (`ID6X`), 496 bytes**. On the fault page,
+The matching surface protocol is **v7 (`ID6Y`), 496 bytes**. On the fault page,
 `launch_mode` carries BMW=0 or OBD=3/7/10, and `boost_style` carries reference=0 or
-raw=1. Other pages retain their existing meanings. Versions 1–5 are rejected.
+raw=1. Other pages retain their existing meanings. Versions 1–6 are rejected.
 Rebuild the complete Library, workers, renderer, dashboard/companion plugins,
 layouts and emulator from fresh output. Keep the complete previous bundle and
 settings for rollback; do not mix revisions.

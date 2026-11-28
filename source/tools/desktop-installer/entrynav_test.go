@@ -88,6 +88,7 @@ func TestEntryNavRejectsWrongPlatformAndUnavailableMenus(t *testing.T) {
 
 func TestStageEntireFullscreenBundle(t *testing.T) {
 	menus := append(append([]plugin{}, fullscreenApps...), fullscreenCompanions...)
+	menus = append(menus, fullDpfApp)
 	for _, display := range []panel{{800, 480}, {960, 480}, {1280, 480}, {1440, 540}, {1920, 720}} {
 		tag := fmt.Sprintf("%dx%d", display.width, display.height)
 		t.Run(tag, func(t *testing.T) {

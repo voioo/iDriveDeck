@@ -20,10 +20,10 @@ figure{display:grid;place-items:center;min-height:0;margin:0}img{max-width:100%;
 const cards=document.querySelector('#cards'), detail=document.querySelector('#detail');
 function show(app){
  document.querySelector('#title').textContent=app.name;
- document.querySelector('#description').textContent=app.path+(app.screen?' · Captured screen':'');
+ document.querySelector('#description').textContent=app.path+(app.screen?(app.synthetic?' · Host render / synthetic data':' · Captured screen'):'');
  const frame=document.querySelector('#screen'); frame.replaceChildren();
  if(app.screen){
-  const picture=new Image(); picture.src='screens/'+app.screen; picture.alt=app.name+' on iDrive'; frame.append(picture);
+  const picture=new Image(); picture.src='screens/'+app.screen; picture.alt=app.name+(app.synthetic?' with synthetic host data':' on iDrive'); frame.append(picture);
  }else{
   const text=document.createElement('p'); text.textContent=app.id==='AirPlayLab'?'Wi-Fi reachability test. AirPlay playback is pending.':'Open this app on iDrive to see its live screen.'; frame.append(text);
  }

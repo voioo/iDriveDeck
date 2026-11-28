@@ -34,6 +34,12 @@ standard and full-screen NBT Evo apps. Full-screen changes require rebuilding th
 complete matching bundle. They are host-tested source; the download above does
 not include them, and exact N57/QNX/parked validation remains outstanding.
 
+The unreleased [DPFDeck source](source/docs/DPFDECK.md) also includes an optional
+full-screen view of supported standard DPF pressure and temperature readings.
+Regeneration status is hidden by default. Soot, ash and regeneration history
+remain unavailable; no regeneration or reset controls are included. These are
+host-tested source changes, with QNX and exact-vehicle validation pending.
+
 ## Features
 
 

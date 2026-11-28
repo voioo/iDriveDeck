@@ -169,6 +169,34 @@ for i, item in enumerate(catalog):
             element(models,'raDataModel',id=1870+row,modelType='Richtext')
             geometry(element(components,'label',id=1870+row,model=1870+row),
                      (28,74+row*70,1160,32))
+    if item['id']=='DPFDeck':
+        element(actions,'hmiAction',id=2210,target=2210)
+        surface_button(actions,components,id=1930,text='DPF settings',action=2210,position=(958,8,275,36))
+        element(element(detail,'optionComponents'),'button',id=1931,text='DPF settings',action=2210)
+        settings=element(element(states,'hmiState',id=2210,parentId=target,text='DPF settings'),'components')
+        for model in range(1920,1924):
+            element(models,'raDataModel',id=model,modelType='Richtext')
+            element(settings,'label',id=model,model=model)
+        choices=('Bank 1','Bank 2','Metric: mbar / C','Imperial: psi / F',
+                 'Hide regeneration status','Show regeneration status')
+        for index,label in enumerate(choices):
+            callback=5920+index
+            combined=element(element(actions,'combinedAction',id=callback+10000,sync='true'),'actions')
+            element(combined,'raAction',id=callback)
+            element(combined,'hmiAction',id=callback+20000,target=target)
+            element(settings,'button',id=callback,text=label,action=callback+10000)
+        captions=('Pressure drop','Inlet pressure','Outlet pressure','Inlet temperature','Outlet temperature','Coolant')
+        for index,label in enumerate(captions):
+            x,y=28+index%3*403,60+index//3*120
+            geometry(element(components,'label',id=1940+index,text=label),(x,y,365,36))
+            model=1400+20*i+index
+            element(models,'raDataModel',id=model,modelType='Richtext')
+            geometry(element(components,'label',id=1960+index,model=model),(x,y+38,365,60))
+        for index,position in ((6,(28,286,1160,40)),(7,(28,8,800,40)),(8,(28,333,1160,36))):
+            model=1400+20*i+index
+            element(models,'raDataModel',id=model,modelType='Richtext')
+            geometry(element(components,'label',id=1960+index,model=model),position)
+        geometry(element(components,'label',id=1950,text='Regeneration requests / inhibition: unavailable'),(28,369,1160,36))
     live = {
         'BoostDeck': tuple('Gauge ' + str(i+1) for i in range(9)),
         'ShiftDeck': ('Road speed', 'Engine RPM'),
@@ -201,7 +229,8 @@ for i, item in enumerate(catalog):
         geometry(element(components, 'label', id=1896, model=1886,
                          text='App target; follow vehicle guidance'), (28,275,1160,55))
     element(models, 'raDataModel', id=600+i, modelType='Richtext')
-    geometry(element(components, 'label', id=460+i, model=600+i), (30, 365, 1110, 70))
+    geometry(element(components, 'label', id=460+i, model=600+i),
+             (30,405,1110,58) if item['id']=='DPFDeck' else (30,365,1110,70))
 for index, (title, target) in enumerate((('Updates', 210), ('System', 211))):
     element(actions, 'hmiAction', id=target, target=target)
     page = element(states, 'hmiState', id=target, text=title)
@@ -324,13 +353,13 @@ def write_individual(name, title, connector, weight, entry, included_states):
     write(name, individual)
 
 
-page_names = ('boost', 'shift', 'mhd', 'codes', 'road', 'beamer', 'launch', 'warm')
+page_names = ('boost', 'shift', 'mhd', 'codes', 'road', 'beamer', 'launch', 'warm', 'dpf')
 with (output / 'modules.txt').open('w') as modules:
     modules.write('ID6LibraryLab surface_updates\n')
     write_individual('ID6LibraryLab', 'ID6 App Updates', 229, 244, 210, {210, 211, 212, 213})
     for i, item in enumerate(catalog):
         name = 'ID6Full' + item['id']
-        connector = 231 + i
+        connector = item.get('connector',231+i)
         entry = 200 + i
         selected = {entry}
         if item['id'] == 'BoostDeck':
@@ -340,6 +369,7 @@ with (output / 'modules.txt').open('w') as modules:
         if item['id'] == 'EngineCodes':
             selected.add(217)
             selected.add(2200)
+        if item['id']=='DPFDeck': selected.add(2210)
         modules.write(f'{name} surface_{page_names[i]}\n')
         write_individual(name, item['name'], connector, 245 + i, entry, selected)
 

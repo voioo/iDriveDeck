@@ -1,0 +1,234 @@
+<?xml version='1.0' encoding='utf-8'?>
+<pluginApps>
+  <pluginApp applicationType="VehicleInformation" applicationWeight="253" text="DPFDeck">
+    <entryButton id="1" action="10">
+      <properties>
+        <property id="23" value="2" />
+      </properties>
+    </entryButton>
+    <actions>
+      <hmiAction id="10" target="208" />
+      <hmiAction id="2210" target="2210" />
+      <raAction id="8210" />
+      <combinedAction id="15920" sync="true">
+        <actions>
+          <raAction id="5920" />
+          <hmiAction id="25920" target="208" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15921" sync="true">
+        <actions>
+          <raAction id="5921" />
+          <hmiAction id="25921" target="208" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15922" sync="true">
+        <actions>
+          <raAction id="5922" />
+          <hmiAction id="25922" target="208" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15923" sync="true">
+        <actions>
+          <raAction id="5923" />
+          <hmiAction id="25923" target="208" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15924" sync="true">
+        <actions>
+          <raAction id="5924" />
+          <hmiAction id="25924" target="208" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15925" sync="true">
+        <actions>
+          <raAction id="5925" />
+          <hmiAction id="25925" target="208" />
+        </actions>
+      </combinedAction>
+    </actions>
+    <models>
+      <raDataModel id="1920" modelType="Richtext" />
+      <raDataModel id="1921" modelType="Richtext" />
+      <raDataModel id="1922" modelType="Richtext" />
+      <raDataModel id="1923" modelType="Richtext" />
+      <raDataModel id="1560" modelType="Richtext" />
+      <raDataModel id="1561" modelType="Richtext" />
+      <raDataModel id="1562" modelType="Richtext" />
+      <raDataModel id="1563" modelType="Richtext" />
+      <raDataModel id="1564" modelType="Richtext" />
+      <raDataModel id="1565" modelType="Richtext" />
+      <raDataModel id="1566" modelType="Richtext" />
+      <raDataModel id="1567" modelType="Richtext" />
+      <raDataModel id="1568" modelType="Richtext" />
+      <raDataModel id="608" modelType="Richtext" />
+    </models>
+    <hmiStates>
+      <hmiState id="208" text="DPFDeck">
+        <components>
+          <button id="1930" text="DPF settings" action="2210" selectAction="8210">
+            <properties>
+              <property id="20" value="547" />
+              <property id="21" value="8" />
+              <property id="9" value="157" />
+              <property id="10" value="36" />
+            </properties>
+          </button>
+          <label id="1940" text="Pressure drop">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="60" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1960" model="1560">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="98" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1941" text="Inlet pressure">
+            <properties>
+              <property id="20" value="246" />
+              <property id="21" value="60" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1961" model="1561">
+            <properties>
+              <property id="20" value="246" />
+              <property id="21" value="98" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1942" text="Outlet pressure">
+            <properties>
+              <property id="20" value="477" />
+              <property id="21" value="60" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1962" model="1562">
+            <properties>
+              <property id="20" value="477" />
+              <property id="21" value="98" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1943" text="Inlet temperature">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="180" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1963" model="1563">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="218" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1944" text="Outlet temperature">
+            <properties>
+              <property id="20" value="246" />
+              <property id="21" value="180" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1964" model="1564">
+            <properties>
+              <property id="20" value="246" />
+              <property id="21" value="218" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1945" text="Coolant">
+            <properties>
+              <property id="20" value="477" />
+              <property id="21" value="180" />
+              <property id="9" value="209" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1965" model="1565">
+            <properties>
+              <property id="20" value="477" />
+              <property id="21" value="218" />
+              <property id="9" value="209" />
+              <property id="10" value="60" />
+            </properties>
+          </label>
+          <label id="1966" model="1566">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="286" />
+              <property id="9" value="663" />
+              <property id="10" value="40" />
+            </properties>
+          </label>
+          <label id="1967" model="1567">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="8" />
+              <property id="9" value="457" />
+              <property id="10" value="40" />
+            </properties>
+          </label>
+          <label id="1968" model="1568">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="333" />
+              <property id="9" value="663" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="1950" text="Regeneration requests / inhibition: unavailable">
+            <properties>
+              <property id="20" value="16" />
+              <property id="21" value="369" />
+              <property id="9" value="663" />
+              <property id="10" value="36" />
+            </properties>
+          </label>
+          <label id="468" model="608">
+            <properties>
+              <property id="20" value="17" />
+              <property id="21" value="405" />
+              <property id="9" value="634" />
+              <property id="10" value="58" />
+            </properties>
+          </label>
+        </components>
+        <optionComponents>
+          <button id="1931" text="DPF settings" action="2210" />
+        </optionComponents>
+      </hmiState>
+      <hmiState id="2210" parentId="208" text="DPF settings">
+        <components>
+          <label id="1920" model="1920" />
+          <label id="1921" model="1921" />
+          <label id="1922" model="1922" />
+          <label id="1923" model="1923" />
+          <button id="5920" text="Bank 1" action="15920" />
+          <button id="5921" text="Bank 2" action="15921" />
+          <button id="5922" text="Metric: mbar / C" action="15922" />
+          <button id="5923" text="Imperial: psi / F" action="15923" />
+          <button id="5924" text="Hide regeneration status" action="15924" />
+          <button id="5925" text="Show regeneration status" action="15925" />
+        </components>
+      </hmiState>
+    </hmiStates>
+  </pluginApp>
+</pluginApps>

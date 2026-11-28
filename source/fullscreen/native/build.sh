@@ -20,6 +20,7 @@ shared=../native/src/common
 c() { qcc -V4.4.2,gcc_ntoarmv7le -Wc,-std=c99 -include stddef.h -mno-unaligned-access -Wall -Wextra -Werror "$@"; }
 c -I"$telemetry/common" -fPIC -O2 -c "$telemetry/common/gauge_core.c" -o native/out/gauge_core.o
 c -I"$shared" -fPIC -O2 -c "$shared/boost_defaults.c" -o native/out/boost_defaults.o
+c -I"$shared" -fPIC -O2 -c "$shared/dpf_core.c" -o native/out/dpf_core.o
 build_plugin() {
     name="$1"
     source="$2"
@@ -35,7 +36,7 @@ build_plugin() {
 c -I"$telemetry/common" -fPIC -O2 -c "$telemetry/common/launch_timer.c" -o native/out/launch_timer.o
 while read -r name page; do
     build_plugin "$name" library "-DID6_PLUGIN_NAME=\"$name\"" "-DID6_ENTRY_PAGE=$page" \
-        native/out/gauge_core.o native/out/boost_defaults.o native/out/launch_timer.o
+        native/out/gauge_core.o native/out/boost_defaults.o native/out/launch_timer.o native/out/dpf_core.o
 done < native/generated/modules.txt
 if test -n "${ID6_STANDARD_NATIVE_DIR:-}"; then
     . native/build-companions.sh
@@ -52,6 +53,7 @@ worker boostdeck-collector-qnx "$telemetry/workers/boost_deck_worker.c" "$teleme
 worker shift-deck-qnx "$telemetry/workers/shift_deck_worker.c"
 worker warmdeck-collector-qnx "$telemetry/workers/warm_deck_worker.c" "$shared/obd_capabilities.c"
 worker engine-codes-qnx "$telemetry/workers/engine_codes_worker.c"
+worker dpfdeck-collector-qnx "$telemetry/workers/dpf_deck_worker.c" "$shared/obd_capabilities.c" "$shared/dpf_regen_capabilities.c" native/out/dpf_core.o
 worker mhd-maps-qnx "$telemetry/workers/mhd_maps_worker.c"
 worker exhaust-flap-worker-qnx "$telemetry/workers/exhaust_flap_worker.c"
 worker beamer-qnx "$telemetry/workers/beamer_worker.c"

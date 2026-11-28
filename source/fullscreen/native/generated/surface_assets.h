@@ -8,6 +8,7 @@ static const char* const surface_titles[] = {
     "BEAMer",
     "LaunchDeck",
     "WarmDeck",
+    "DPFDeck",
 };
 struct feature_button { const char *title; int action, x, y, width, height; };
 static const struct feature_button mhd_controls[] = {

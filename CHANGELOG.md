@@ -2,6 +2,7 @@
 
 ## Unreleased source changes
 
+- DPFDeck adds an optional full-screen app with the shared monitoring worker, explicit unavailable/stale states, saved bank/units and optional read-only regeneration status. Connector 243 preserves existing app IDs. Installer fixtures cover selection, backups and rollback; complete matching surface-v7 builds and vehicle validation remain required.
 - Full-screen Engine Fault Codes shares the standard worker and strict status-mask parser, adds DDE/raw and separate OBD emissions reads, retains completed snapshots across display settings, and requires a fresh explicit BMW clear confirmation. Native fallback, private settings and emulator use the same display rules. Surface v6 requires a complete matching bundle; QNX and physical validation remain pending.
 - BoostDeck adds optional PID 6D rail gauge and PID 70 absolute boost requested/actual A/B gauges, gated by PID and per-field support. Existing sources/defaults and NBG9/B4 contracts stay unchanged; pressure IDs use NBG10/B5. This is host-tested source, with exact N57/QNX validation pending.
 - BoostDeck adds optional read-only EGR request/error and A/B request/actual/error gauges. PID and per-field support gates, grouped polling and explicit labels keep error separate from actual duty/position. Automatic diesel defaults are unchanged.

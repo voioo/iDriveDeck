@@ -7,3 +7,4 @@ ID6FullRoadJet surface_road
 ID6FullBEAMer surface_beamer
 ID6FullLaunchDeck surface_launch
 ID6FullWarmDeck surface_warm
+ID6FullDPFDeck surface_dpf

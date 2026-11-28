@@ -52,7 +52,7 @@ def fixture_platforms(repo, directory):
     workers = {
         'ID6LibraryLab': ('id6-library-fullscreen-qnx','beamer-qnx','boostdeck-collector-qnx',
                          'engine-codes-qnx','exhaust-flap-worker-qnx','library-usb-update-qnx',
-                         'mhd-maps-qnx','road-jet-qnx','shift-deck-qnx','warmdeck-collector-qnx'),
+                         'mhd-maps-qnx','road-jet-qnx','shift-deck-qnx','warmdeck-collector-qnx','dpfdeck-collector-qnx'),
         'ID6FullBootmod3Suite': ('bootmod3-qnx',),
         'ID6FullMgFlasher': ('mgflasher-qnx',),
         'ID6FullXDriveControl': ('xdrive-control-qnx',),

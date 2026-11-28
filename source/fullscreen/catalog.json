@@ -54,5 +54,15 @@
     "category": "Fluid temperatures",
     "path": "My Vehicle \u2192 WarmDeck",
     "screen": "11-warmdeck.png"
+  },
+  {
+    "id": "DPFDeck",
+    "name": "DPFDeck",
+    "category": "Diesel monitoring",
+    "path": "My Vehicle \u2192 DPFDeck",
+    "screen": "12-dpfdeck.png",
+    "connector": 243,
+    "optional": true,
+    "synthetic": true
   }
 ]

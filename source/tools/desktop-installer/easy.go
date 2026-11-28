@@ -24,6 +24,36 @@ func choose(names []string) ([]plugin, error) {
 	return selectMenus(names, false)
 }
 
+func chooseFullscreenExtras(names []string) ([]plugin, error) {
+	var regular []string
+	dpf := false
+	for _, name := range names {
+		if name != "DPFDeck" {
+			regular = append(regular, name)
+			continue
+		}
+		if dpf {
+			return nil, errors.New("One menu was selected twice.")
+		}
+		dpf = true
+	}
+	var selected []plugin
+	if len(regular) > 0 {
+		var err error
+		selected, err = choose(regular)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if dpf {
+		if !fullDpfPayloadAvailable() {
+			return nil, errors.New("Full-screen DPFDeck is not included in this installer build.")
+		}
+		selected = append(selected, dpfApp)
+	}
+	return selected, nil
+}
+
 func selectMenus(names []string, removal bool) ([]plugin, error) {
 	available := append(append([]plugin(nil), apps...), dpfApp)
 	if removal {
@@ -84,10 +114,11 @@ func perform(in request) outcome {
 		selection = fullscreenApps
 		if in.Uninstall {
 			selection = append(append([]plugin{}, fullscreenApps...), fullscreenCompanions...)
+			selection = append(selection, fullDpfApp)
 		}
 		if len(in.Apps) != 0 {
 			var companions []plugin
-			companions, err = choose(in.Apps)
+			companions, err = chooseFullscreenExtras(in.Apps)
 			if err != nil {
 				return fail(err)
 			}
@@ -96,7 +127,7 @@ func perform(in request) outcome {
 				switch app.name {
 				case "Bootmod3Suite", "MgFlasher":
 					alternateTuning = true
-				case "XDriveControl", "HybridDeck":
+				case "XDriveControl", "HybridDeck", "DPFDeck":
 				default:
 					return fail(errors.New("That menu is already available in the full-screen bundle."))
 				}
@@ -108,7 +139,7 @@ func perform(in request) outcome {
 				}
 			}
 			for _, app := range companions {
-				for _, full := range fullscreenCompanions {
+				for _, full := range append(append([]plugin{}, fullscreenCompanions...), fullDpfApp) {
 					if full.name == "ID6Full"+app.name {
 						selection = append(selection, full)
 						break

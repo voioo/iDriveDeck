@@ -73,7 +73,8 @@ func (f shellFixture) run(command string, input []byte, _ int) ([]byte, error) {
 	if f.corruptStagedRead && strings.HasPrefix(command, "cat ") && strings.HasSuffix(command, "/new-BoostDeck/BoostDeck.xml") {
 		return []byte("truncated upload"), nil
 	}
-	if f.corruptDPFRead && strings.HasPrefix(command, "cat ") && strings.HasSuffix(command, "/new-DPFDeck/DPFDeck.xml") {
+	if f.corruptDPFRead && strings.HasPrefix(command, "cat ") &&
+		(strings.HasSuffix(command, "/new-DPFDeck/DPFDeck.xml") || strings.HasSuffix(command, "/new-ID6FullDPFDeck/ID6FullDPFDeck.xml")) {
 		return []byte("truncated DPF upload"), nil
 	}
 	if strings.Contains(command, "find "+root+"/Plugins") {
@@ -87,7 +88,7 @@ func (f shellFixture) run(command string, input []byte, _ int) ([]byte, error) {
 			guard = `case "$1:$2:$3" in move:*/new-MhdMaps:*/Plugins/MhdMaps) return 1;; esac; `
 		}
 		if f.failDPFRename {
-			guard += `case "$1:$2:$3" in move:*/new-DPFDeck:*/Plugins/DPFDeck) return 1;; esac; `
+			guard += `case "$1:$2:$3" in move:*/new-DPFDeck:*/Plugins/DPFDeck|move:*/new-ID6FullDPFDeck:*/Plugins/ID6FullDPFDeck) return 1;; esac; `
 		}
 		if f.failRemoveShiftDeck {
 			guard = `case "$1:$2:$3" in move:*/Plugins/ShiftDeck:*/old-ShiftDeck) return 1;; esac; `

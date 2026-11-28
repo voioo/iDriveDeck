@@ -10,6 +10,7 @@
 #include "gauge_core.h"
 #include "boost_scale_label.h"
 #include "fault_view.h"
+#include "../../../native/src/common/dpf_core.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -534,6 +535,25 @@ void surface_draw(struct canvas c, const struct surface_state *s)
     case surface_shift: draw_shift(c,s); break;
     case surface_boost: draw_boost(c,s); break;
     case surface_warm: draw_warm(c,s); break;
+    case surface_dpf: {
+        static const char* const captions[]={"Pressure drop","Inlet pressure","Outlet pressure",
+                                            "Inlet temperature","Outlet temperature","Coolant"};
+        static const char* const states[]={"Unknown","Unsupported","Unavailable","Stale"};
+        text(c,265,10,value(s,7),muted,14);
+        button(c,520,5,98,24,"Settings",s->selection==2210);
+        for (unsigned i=0;i<6;++i) {
+            const int x=24+(i%3)*200,y=40+(i/3)*73;
+            card(c,x,y,192,65,false);
+            text(c,x+10,y+5,captions[i],muted,16);
+            const unsigned state=s->boost_signal[i];
+            const char* reading=state==DPF_VALID ? value(s,i) : state<COUNT(states) ? states[state] : "--";
+            text(c,x+10,y+30,reading,state==DPF_VALID ? bright : muted,boost_text_size(reading,24,172));
+        }
+        text(c,26,182,value(s,6),muted,15);
+        text(c,26,205,s->status,muted,11);
+        text(c,26,225,"Soot/ash, history, requests and inhibition: unavailable",muted,11);
+        break;
+    }
     case surface_beamer: draw_beamer(c,s); break;
     case surface_road: draw_road(c,s); break;
     case surface_mhd:
@@ -592,6 +612,6 @@ void surface_draw(struct canvas c, const struct surface_state *s)
     }
     default: break;
     }
-    if (s->status[0] && s->page!=surface_warm)
+    if (s->status[0] && s->page!=surface_warm && s->page!=surface_dpf)
         text(c,26,s->page==surface_codes ? 225 : 211,s->status,muted,s->page==surface_codes ? 11 : 13);
 }

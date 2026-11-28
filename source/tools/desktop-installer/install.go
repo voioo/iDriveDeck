@@ -271,6 +271,7 @@ type plugin struct{ name, worker, connector string }
 
 // DPFDeck is an explicit optional selection, never part of legacy defaults.
 var dpfApp = plugin{"DPFDeck", "dpfdeck-collector-qnx", "123"}
+var fullDpfApp = plugin{"ID6FullDPFDeck", "", "243"}
 
 var apps = []plugin{
 	{"BoostDeck", "boostdeck-collector-qnx", "100"},
@@ -320,11 +321,14 @@ func replacedMenuBackups(r remoteRunner, selection []plugin, replaceAll bool) ([
 	if replaceAll {
 		candidates = append(append(append([]plugin{}, apps...), fullscreenApps...), fullscreenReplacedMenus...)
 		candidates = append(candidates, fullscreenCompanions...)
+		candidates = append(candidates, fullDpfApp)
 	}
 	for _, app := range selection {
+		if app == fullDpfApp {
+			candidates = append(candidates, dpfApp)
+		}
 		if app.name == "ID6LibraryLab" {
 			candidates = append(candidates, fullscreenReplacedMenus...)
-			break
 		}
 	}
 	seen := make(map[string]bool)
@@ -365,7 +369,7 @@ func (p plugin) usesImages() bool {
 func (p plugin) executables() []string {
 	if p.name == "ID6LibraryLab" {
 		return []string{p.worker, "beamer-qnx", "boostdeck-collector-qnx", "engine-codes-qnx", "exhaust-flap-worker-qnx",
-			"library-usb-update-qnx", "mhd-maps-qnx", "road-jet-qnx", "shift-deck-qnx", "warmdeck-collector-qnx"}
+			"library-usb-update-qnx", "mhd-maps-qnx", "road-jet-qnx", "shift-deck-qnx", "warmdeck-collector-qnx", "dpfdeck-collector-qnx"}
 	}
 	if p.worker == "" {
 		return nil
@@ -401,6 +405,25 @@ func dpfPayloadAvailable() bool {
 	raw, _ := bundled.ReadFile("payload/DPFDeck/DPFDeck.manifest")
 	var identity manifest
 	return xml.Unmarshal(raw, &identity) == nil && identity.Name == dpfApp.name && identity.Connector == dpfApp.connector
+}
+
+func fullDpfPayloadAvailable() bool {
+	if _, err := bundled.ReadFile("payload/TEST-ONLY-DPF-FIXTURE"); err == nil {
+		return false
+	}
+	for _, name := range fullDpfApp.requiredFiles() {
+		data, err := bundled.ReadFile("payload/" + fullDpfApp.name + "/" + name)
+		if err != nil || len(data) == 0 {
+			return false
+		}
+	}
+	worker, err := bundled.ReadFile("payload/ID6LibraryLab/dpfdeck-collector-qnx")
+	if err != nil || len(worker) == 0 {
+		return false
+	}
+	raw, _ := bundled.ReadFile("payload/" + fullDpfApp.name + "/" + fullDpfApp.name + ".manifest")
+	var identity manifest
+	return xml.Unmarshal(raw, &identity) == nil && identity.Name == fullDpfApp.name && identity.Connector == fullDpfApp.connector
 }
 
 type manifest struct {

@@ -1,5 +1,59 @@
 # DPFDeck
 
+## Full-screen NBT Evo source
+
+The full-screen app uses the same monitoring worker, standard-PID decoder and
+DPF1/DPF2 packet formats as the standard app. It shows pressure drop, inlet and
+outlet pressures, inlet and outlet temperatures, and coolant for the selected
+bank. Unknown, Unsupported, Unavailable, Stale and valid zero remain distinct.
+It does not infer pressure drop from the inlet/outlet readings, or regeneration
+from temperature, pressure or engine load.
+
+**Settings** or **OPTIONS → DPF settings** selects bank, metric/imperial units and
+the optional regeneration indication. That indication starts hidden. Enabling
+it permits the existing capability-gated standard status read; it does not
+request regeneration. Active, Passive, In progress and Not in progress use the
+independently supported progress/type fields. Soot, ash, regeneration history,
+requests and inhibition remain explicitly unavailable. There are no mass
+thresholds, completion estimates, reset controls or ECU-specific identifiers.
+
+Each reading checks the worker PID, generation token, source address/port,
+sequence and timestamps. A sample from before opening cannot appear as fresh.
+The consumer drains at most eight packets per poll. Opening a different page
+releases the worker and receive socket. Changing the optional read mode waits
+for the previous worker to exit before starting its replacement. The MOST
+transport uses the same DPF ownership marker as the standard app.
+
+Full-screen settings use their own D2 record at
+`/var/opt/hmi/data/ID5/ID6LibraryLab.dpf.prefs`. An absent physical full-screen
+file can import the standard D1/D2 `DPFDeck.prefs` without rewriting it. Corrupt
+settings revert to metric bank 1 with regeneration status hidden. Failed saves
+retain the previous settings and show a warning. IDEmu has a separate
+`library-dpf.prefs` bridge record; its feed is labelled synthetic and never
+launches a diagnostic worker.
+
+The app has connector **243**, preserving all existing dashboard and companion
+IDs, including Bootmod3's 239. It remains an explicit optional installer choice.
+The checkbox requires the matching full-screen module and shared worker;
+host-fixture payloads remain blocked. Switching from the standard DPF menu
+backs up that menu, and removal or rollback preserves both settings files.
+All five full-screen panel sizes have generated native fallback layouts.
+
+Surface **v7 (`ID6Y`), 496 bytes** adds DPF page 8 and per-field states. Versions
+1–6 are rejected. Rebuild the complete Library, workers, renderer, plugins,
+companions, layouts and emulator from fresh output. Retain the entire previous
+bundle and settings backups for rollback. No QNX binaries or vehicle validation
+are supplied by these source changes.
+
+`make -C source/native test-full-dpf` exercises production callbacks, private
+settings, the emulator path, five-panel C drawing and the canonical transport
+and coexistence tests against the full-screen workers. The host image below
+contains synthetic inputs, including valid zero and unsupported fields.
+
+![Synthetic full-screen DPF view](images/dpf-fullscreen-host-synthetic.png)
+
+## Standard native app
+
 DPFDeck is an experimental native monitoring app for vehicles advertising
 standard DPF pressure and temperature PIDs. Source includes the worker,
 six-tile dashboard, native OPTIONS menu, resource generator and optional

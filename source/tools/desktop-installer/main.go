@@ -110,5 +110,10 @@ func installerPage(html []byte) []byte {
 	if !dpfPayloadAvailable() {
 		attribute = []byte(`disabled title="DPFDeck is not included in this installer build."`)
 	}
-	return bytes.ReplaceAll(html, []byte("data-dpf-availability"), attribute)
+	html = bytes.ReplaceAll(html, []byte("data-dpf-availability"), attribute)
+	attribute = []byte("")
+	if !fullDpfPayloadAvailable() {
+		attribute = []byte(`disabled title="Full-screen DPFDeck is not included in this installer build."`)
+	}
+	return bytes.ReplaceAll(html, []byte("data-full-dpf-availability"), attribute)
 }

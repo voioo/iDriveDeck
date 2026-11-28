@@ -10,6 +10,7 @@
 #include "boost_scale_label.h"
 #include "fault_state.h"
 #include "fault_view.h"
+#include "dpf_state.h"
 #include "boost_settings_assets.h"
 #include "gauge_core.h"
 #include "warm_frame.h"
@@ -31,10 +32,10 @@
 namespace {
 enum { boost = surface_boost, shift = surface_shift, mhd = surface_mhd, codes = surface_codes,
        road = surface_road, beamer = surface_beamer, launchPage = surface_launch,
-       warm = surface_warm, home = surface_home,
+       warm = surface_warm, dpf=surface_dpf, home = surface_home,
        updates = surface_updates, systemPage = surface_system,
        updateConfirm = surface_update_confirm, installConfirm = surface_install_confirm, inactive = surface_hidden,
-       boostSettings, shiftSettings, codesConfirm, shiftGasSettings, codesSettings, poll_key = 0x4944364cu };
+       boostSettings, shiftSettings, codesConfirm, shiftGasSettings, codesSettings, dpfSettings, poll_key = 0x4944364cu };
 enum { live_poll_ms = 16, menu_poll_ms = 40 };
 const unsigned kEntryPage = ID6_ENTRY_PAGE;
 enum { shift_target_count=ShiftPreferences::GASOLINE_TARGETS };
@@ -51,6 +52,7 @@ const char kBoostLayout[] = ID6_BOOST_LAYOUT;
 const char kBoostDefaults[] = ID6_BOOST_DEFAULTS;
 const char kBoostRailScale[] = ID6_BOOST_RAIL_SCALE;
 const char kCodesPreferences[] = ID6_CODES_PREFS;
+const char kDpfPreferences[] = ID6_DPF_PREFS;
 const unsigned kAlertSignals[] = {BD_COOLANT, BD_OIL_TEMP, BD_OIL};
 const char* const kBoostCaptions[][2] = {
 #define SIGNAL(id, name, lo, hi, unit, wide, narrow) {wide,narrow},
@@ -63,18 +65,20 @@ const char *worker(unsigned page) {
         case road: return "road-jet-qnx";
         case boost: return "boostdeck-collector-qnx";
         case shift: case launchPage: return "shift-deck-qnx";
+        case dpf: return "dpfdeck-collector-qnx";
         default: return "warmdeck-collector-qnx";
     }
 }
 unsigned port(unsigned page) {
     if (page == road) return ROAD_JET_PORT;
+    if (page == dpf) return 42914u;
     return page == boost ? 42910u : page == shift ? 42911u : page == launchPage ? 42913u : 42912u;
 }
 unsigned fields(unsigned page) {
-    return page == boost ? 9u : page == shift ? 2u : page == launchPage ? 5u : 3u;
+    return page == boost || page==dpf ? 9u : page == shift ? 2u : page == launchPage ? 5u : 3u;
 }
 bool usbPage(unsigned page) { return page == updates || page == updateConfirm || page == installConfirm; }
-bool usesWorker(unsigned page) { return page == boost || page == shift || page == launchPage || page == warm || page == road; }
+bool usesWorker(unsigned page) { return page == boost || page == shift || page == launchPage || page == warm || page == road || page==dpf; }
 bool fresh(uint64_t now, uint64_t sample, unsigned age) {
     return sample && sample <= now && now - sample <= age;
 }
@@ -113,6 +117,14 @@ class ID6LibraryLab : public bmw::PluginApp {
     bool shiftSaved_;
     bool warmFahrenheit_;
     FullWarmState warmState_;
+    FullDpfState dpfState_;
+    FullDpfPreferences dpfPrefs_;
+    const char* dpfPreferences_;
+    uint64_t dpfToken_;
+    bool dpfSaved_;
+#ifdef ID6_EMULATOR
+    bool dpfFile_;
+#endif
     launch_timer timer_;
     lt_mode launchMode_;
     LaunchRecords records_;
@@ -604,6 +616,11 @@ class ID6LibraryLab : public bmw::PluginApp {
                 state.boost_level[i]=static_cast<uint16_t>(warmState_.level(i));
             }
         }
+        if (page_==dpf) {
+            const uint64_t now=bd_mono_ms();
+            for (unsigned i=0;i<6;++i)
+                state.boost_signal[i]=static_cast<uint8_t>(dpfState_.state(FullDpfState::field(i,dpfPrefs_.bank),now));
+        }
         if (page_ == shift && shiftPrefs_.valid()) {
             const int rpm=shiftState_.rpm(bd_mono_ms());
             state.boost_level[0]=static_cast<uint16_t>(shiftPrefs_.scaleRpm());
@@ -643,6 +660,65 @@ class ID6LibraryLab : public bmw::PluginApp {
         if (!strcmp(last_[index], text)) return;
         snprintf(last_[index], sizeof last_[index], "%s", text);
         updateModel(1400u + page * 20u + index, bmw::BasicString<char>(text));
+    }
+    void resetDpfState() {
+        const uint64_t now=bd_mono_ms();
+        dpfToken_=now>dpfToken_ ? now : dpfToken_+1;
+        if (!dpfToken_) ++dpfToken_;
+        dpfState_.reset(now);
+    }
+    void refreshDpfSettings() {
+        char text[72];snprintf(text,sizeof text,"Filter bank: %u",dpfPrefs_.bank+1);
+        updateModel(1920u,bmw::BasicString<char>(text));
+        updateModel(1921u,bmw::BasicString<char>(dpfPrefs_.metric ? "Units: mbar / C" : "Units: psi / F"));
+        updateModel(1922u,bmw::BasicString<char>(dpfPrefs_.regen ? "Regeneration status: shown" : "Regeneration status: hidden"));
+        updateModel(1923u,bmw::BasicString<char>(dpfSaved_ ?
+                    "Monitoring only; no regeneration or reset controls" : "Could not save DPF settings"));
+    }
+    void loadDpfConfiguration() {
+        const char* path=dpfPreferences_;
+#ifndef ID6_EMULATOR
+        if (!strcmp(path,kDpfPreferences) && access(path,F_OK)!=0 && errno==ENOENT)
+            path="/var/opt/hmi/data/ID5/DPFDeck.prefs";
+#endif
+        dpfPrefs_=FullDpfPreferences();dpfPrefs_.load(path);
+        refreshDpfSettings();
+    }
+    void refreshDpf(uint64_t now) {
+        unsigned valid=0,unsupported=0,stale=0;
+        char text[72];
+        for (unsigned slot=0;slot<6;++slot) {
+            const int current=dpfState_.state(FullDpfState::field(slot,dpfPrefs_.bank),now);
+            dpfState_.reading(slot,dpfPrefs_,now,text,sizeof text);display(dpf,slot,text);
+            if (slot<5) { valid+=current==DPF_VALID;unsupported+=current==DPF_UNSUPPORTED;stale+=current==DPF_STALE; }
+        }
+        snprintf(text,sizeof text,"Regeneration: %s",dpfState_.regeneration(dpfPrefs_.regen,now));display(dpf,6,text);
+        snprintf(text,sizeof text,"Bank %u | %s",dpfPrefs_.bank+1,dpfPrefs_.metric ? "mbar, C" : "psi, F");display(dpf,7,text);
+        display(dpf,8,"Soot/ash/history: unavailable");
+        const char* message=!dpfSaved_ ? "Could not save DPF settings" : telemetryFailed_ ? "Telemetry unavailable; reopen to retry" :
+             valid==5 ? "Live DPF readings" : valid ? "Some DPF readings unavailable" : stale ? "DPF readings stale" :
+             unsupported==5 ? "DPF readings unsupported" : "Waiting for DPF readings";
+#ifdef ID6_EMULATOR
+        snprintf(text,sizeof text,"IDEmu synthetic | %s",message);status(dpf,text);
+#else
+        status(dpf,message);
+#endif
+    }
+    template<unsigned Setting,unsigned Value> bool setDpfOption(const bmw::Parcel&) {
+        if (page_!=dpf && page_!=dpfSettings) return true;
+        FullDpfPreferences next=dpfPrefs_;
+        if (Setting==0) next.bank=Value;
+        else if (Setting==1) next.metric=Value!=0;
+        else next.regen=Value!=0;
+        dpfSaved_=next.save(dpfPreferences_);
+        if (dpfSaved_) {
+            const bool restart=next.regen!=dpfPrefs_.regen;
+            dpfPrefs_=next;
+            if (restart) { stopWorker();resetDpfState();received_=false;telemetryFailed_=false; }
+        }
+        refreshDpfSettings();
+        if (page_==dpf) refreshDpf(bd_mono_ms());
+        syncSurface();schedule();return true;
     }
     void refreshWarm(uint64_t now) {
         warmState_.update(now);
@@ -718,6 +794,7 @@ class ID6LibraryLab : public bmw::PluginApp {
         else if (!any) status(boost,"Waiting for valid telemetry");
     }
     void clear(unsigned page) {
+        if (page==dpf) { resetDpfState();refreshDpf(bd_mono_ms());return; }
         memset(last_, 0, sizeof last_);
         if (page==boost) {
             resetBoostState();
@@ -788,6 +865,7 @@ class ID6LibraryLab : public bmw::PluginApp {
         if (page_==boost) refreshBoost(bd_mono_ms());
         if (page_==warm) refreshWarm(bd_mono_ms());
         if (page_==shift) refreshShift(bd_mono_ms());
+        if (page_==dpf) refreshDpf(bd_mono_ms());
         syncSurface();
         schedule();
     }
@@ -823,17 +901,20 @@ class ID6LibraryLab : public bmw::PluginApp {
         if (page_==boost) {
             resetBoostState();
         }
-        snprintf(token,sizeof token,"%llu",static_cast<unsigned long long>(boostToken_));
+        if (page_==dpf) resetDpfState();
+        snprintf(token,sizeof token,"%llu",static_cast<unsigned long long>(page_==dpf ? dpfToken_ : boostToken_));
         const char *base[] = {path, "--host", gateway, "--udp-port", udp, 0};
         const char *launchArgs[] = {path, "--host", gateway, "--udp-port", udp, "--speed-only", 0};
         const char *roadArgs[] = {path, "--host", gateway, 0};
+        const char *dpfArgs[] = {path,"--host",gateway,"--udp-port",udp,"--token",token,
+                                dpfPrefs_.regen ? "--regen-status" : 0,0};
         const char *boostArgs[] = {path, "--host", gateway, "--udp-port", udp,
                                   "--session", automaticBoost() ? "--auto-diesel" : "--signals",
                                   automaticBoost() ? token : mask, 0, 0, 0};
         unsigned next=8;
         if (!automaticBoost() && (selected&BD_BIT(BD_ETHANOL))) boostArgs[next++]="--ethanol";
         if (!automaticBoost() && boostLayout_.diesel) boostArgs[next]="--diesel";
-        child_ = launch(page_ == boost ? boostArgs : page_ == launchPage ? launchArgs : page_ == road ? roadArgs : base, -1);
+        child_ = launch(page_ == boost ? boostArgs : page_ == dpf ? dpfArgs : page_ == launchPage ? launchArgs : page_ == road ? roadArgs : base, -1);
         if (child_ <= 0) { stopWorker(); return false; }
         workerPage_ = page_;
         childStopping_ = false;
@@ -850,7 +931,15 @@ class ID6LibraryLab : public bmw::PluginApp {
             updateRoad(frame,now);
             return;
         }
-        if (page_ == boost) {
+        if (page_ == dpf) {
+#ifdef ID6_EMULATOR
+            const pid_t owner=1;
+#else
+            const pid_t owner=child_;
+#endif
+            if (!dpfState_.accept(bytes,size,now,dpfToken_,owner)) return;
+            refreshDpf(now);
+        } else if (page_ == boost) {
 #ifdef ID6_EMULATOR
             const pid_t owner=1; // Explicitly synthetic local feed; never a vehicle worker.
 #else
@@ -903,7 +992,7 @@ class ID6LibraryLab : public bmw::PluginApp {
             warmState_.accept(frame,now);
             refreshWarm(now);
         }
-        if (!received_) { if (page_!=boost && page_!=warm) status(page_, "Worker connected"); received_ = true; }
+        if (!received_) { if (page_!=boost && page_!=warm && page_!=dpf) status(page_, "Worker connected"); received_ = true; }
         lastPacket_ = now;
     }
 #ifdef ID6_EMULATOR
@@ -925,7 +1014,16 @@ class ID6LibraryLab : public bmw::PluginApp {
         }
         if (lastPacket_ && sample.sampled_ms <= lastPacket_) return;
         const int rpm = sample.ignition >= 69 ? sample.rpm : 0;
-        if (page_ == boost) {
+        if (page_==dpf) {
+            dpf_frame frame;memset(&frame,0,sizeof frame);
+            frame.sent_ms=sample.sampled_ms;frame.seq=static_cast<uint32_t>(sample.sampled_ms);
+            frame.token=dpfToken_;frame.worker_pid=1;
+            frame.known=frame.supported=frame.valid=DPF_ALL;
+            const double values[]={2.5,105,102.5,1.5,103,101.5,410,420,390,400,static_cast<double>(sample.coolant),1,0};
+            for (unsigned i=0;i<DPF_COUNT;++i) frame.value[i]=values[i];
+            char packet[DPF_MAX_PACKET];const int length=dpf_encode(&frame,packet,sizeof packet);
+            if (length>0) render(packet,static_cast<unsigned>(length),now);
+        } else if (page_ == boost) {
             // IDEmu supplies RPM, pedal and coolant. The remaining gauges use
             // simple test values so the layout can be checked under changing load.
             bd_frame frame;
@@ -1221,6 +1319,7 @@ class ID6LibraryLab : public bmw::PluginApp {
             page_ = Page;
             if (Page==boostSettings) refreshBoostSettings();
             if (Page==codesSettings) refreshCodesSettings();
+            if (Page==dpfSettings) refreshDpfSettings();
             if (Page!=codes && Page!=codesConfirm) codesClearPending_=false;
             if (Page==boostSettings || Page==warm)
                 updateModel(1880u,bmw::BasicString<char>(dctTemperatureLabel()));
@@ -1236,6 +1335,7 @@ class ID6LibraryLab : public bmw::PluginApp {
                 case beamer: controlFocus_ = 250; break;
                 case codes: controlFocus_ = 5890; break;
                 case codesConfirm: controlFocus_ = 236; break;
+                case dpf: controlFocus_=2210;break;
                 case launchPage: controlFocus_ = 231; break;
                 case updates: controlFocus_ = systemPage; break;
                 case systemPage: controlFocus_ = updates; break;
@@ -1447,7 +1547,7 @@ public:
                   const char* shift_preferences=kShiftPreferences,const char* shift_profile=kShiftProfile,
                   const char* boost_preferences=kBoostPrefs,const char* boost_assignments=kBoostLayout,
                   const char* boost_defaults=kBoostDefaults,const char* boost_rail_scale=kBoostRailScale,
-                  const char* codes_preferences=kCodesPreferences)
+                  const char* codes_preferences=kCodesPreferences,const char* dpf_preferences=kDpfPreferences)
         : bmw::PluginApp(dispatcher, name, major, minor, version, cfg, res),
           page_(inactive), workerPage_(inactive), socket_(-1), child_(-1),
           queued_(false), childStopping_(false), received_(false), telemetryFailed_(false), lastPacket_(0),
@@ -1458,7 +1558,12 @@ public:
           boostFiles_(0),
 #endif
           boostSlot_(9), tone_(-1), lastTone_(0),
-          shiftPreferences_(shift_preferences), shiftProfile_(shift_profile), shiftSaved_(true), warmFahrenheit_(false), launchMode_(LT_0_100), surfaceFailed_(false), codesStarted_(false),
+          shiftPreferences_(shift_preferences), shiftProfile_(shift_profile), shiftSaved_(true), warmFahrenheit_(false),
+          dpfPreferences_(dpf_preferences),dpfToken_(0),dpfSaved_(true),
+#ifdef ID6_EMULATOR
+          dpfFile_(false),
+#endif
+          launchMode_(LT_0_100), surfaceFailed_(false), codesStarted_(false),
           codesComplete_(false),codesSaved_(true),codesIncomplete_(false),codesPreferences_(codes_preferences),
           codesRequested_(0),codesResult_(0),codesConfirmedAt_(0),
 #ifdef ID6_EMULATOR
@@ -1515,6 +1620,22 @@ public:
             shiftPrefs_.load(shiftPreferences_,shiftProfile_);
             registerShiftMenu();
             registerSelection<shift,216>();
+        }
+        if (kEntryPage==dpf) {
+            loadDpfConfiguration();
+            registerPage<dpfSettings>(2210);
+            registerSelection<dpf,2210>();
+            typedef bmw::Delegate<bool,const bmw::Parcel&> Action;
+            typedef bool (*Handler)(void*,const bmw::Parcel&);
+            const Handler handlers[]={
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<0,0> >,
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<0,1> >,
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<1,1> >,
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<1,0> >,
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<2,0> >,
+                &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setDpfOption<2,1> >};
+            Action action;action.m_obj=this;
+            for (unsigned i=0;i<6;++i) { action.m_exec=handlers[i];addHandler(5920u+i,action); }
         }
         if (kEntryPage == launchPage) {
             unsigned mode;
@@ -1573,6 +1694,9 @@ public:
         pollUsb();
         reapTone();
 #ifdef ID6_EMULATOR
+        if (kEntryPage==dpf && !dpfFile_ && access(dpfPreferences_,F_OK)==0) {
+            dpfFile_=true;loadDpfConfiguration();resetDpfState();
+        }
         if (kEntryPage==codes && !codesFile_ && access(codesPreferences_,F_OK)==0) {
             codesFile_=true;loadCodesConfiguration();
             if (codesComplete_) showCodes();
@@ -1638,8 +1762,12 @@ public:
                 if (page_==boost && (childStopping_ || senderSize!=sizeof sender ||
                     sender.sin_family!=AF_INET || sender.sin_addr.s_addr!=htonl(INADDR_LOOPBACK) ||
                     ntohs(sender.sin_port)!=BOOST_ACTIVE_PORT)) continue;
+                if (page_==dpf && (childStopping_ || senderSize!=sizeof sender ||
+                    sender.sin_family!=AF_INET || sender.sin_addr.s_addr!=htonl(INADDR_LOOPBACK) ||
+                    ntohs(sender.sin_port)!=DPF_ACTIVE_PORT)) continue;
                 render(packet, static_cast<unsigned>(got), now);
             }
+            if (page_==dpf) { finishPoll();return true; }
             if (page_ == road) {
                 if (!fresh(now,lastPacket_,ROAD_JET_STALE_MS)) setRoadMode(ROAD_JET_WAITING);
                 finishPoll();

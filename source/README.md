@@ -33,3 +33,8 @@ the display refers drivers to the vehicle's guidance instead of a generic RPM li
 BoostDeck's [diesel rail display scale](docs/BOOST-DIESEL-SCALE.md) is selectable
 without changing the gasoline range or saved gauge configuration. Host tests do
 not establish vehicle support.
+
+[Engine fault-code handling](docs/FAULT-CODES.md) describes supported status bits,
+the DDE/raw view, separate standard confirmed/pending/permanent emissions-code
+reads, description limitations and explicit clear confirmation. Standard OBD
+codes are parsed from their own response format, never shortened BMW UDS codes.

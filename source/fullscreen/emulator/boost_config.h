@@ -12,6 +12,7 @@ static inline int boost_config_valid(unsigned kind,const unsigned char* data,siz
         return 1;
     }
     if (kind==2) return count==3 && data[0]=='D' && data[1]==1 && data[2]<=1;
+    if (kind==3) return count==3 && data[0]=='R' && data[1]==1 && data[2]<4;
     if (kind!=1 || count<3 || data[0]!='B' || data[1]<1 || data[1]>6 || data[2]>1) return 0;
     const unsigned stride=data[1]==1 ? 11 : 9;
     if (count!=3+2*stride) return 0;

@@ -1,5 +1,14 @@
 # Diesel compatibility investigation
 
+Workflow update, 28 November: the owner clarified that draft development reviews
+belong on the fork. Upstream PRs are opened only when ready for review. This
+supersedes earlier draft-upstream wording below. Fork #2–#8 now hold the working
+reviews, with rail work tracked at [fork #6](https://github.com/voioo/iDriveDeck/pull/6).
+Existing upstream drafts await the owner's cleanup choice; their discussions
+must be preserved. No further WIP may be published to their shared head branches
+while that choice is pending. The full-screen rail follow-up is being tested in
+an isolated branch; no physical vehicle or QNX validation is claimed.
+
 Audit baseline: upstream `8567abaadd1305965b3ad39e3222575cd49c507d`,
 27 November 2026. Source is MIT licensed. No additional contribution template or
 CI workflow was present at that baseline. Follow `source/AGENTS.md` and the host

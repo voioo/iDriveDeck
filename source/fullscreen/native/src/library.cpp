@@ -7,6 +7,7 @@
 #include "boost_layout.h"
 #include "boost_files.h"
 #include "boost_state.h"
+#include "boost_scale_label.h"
 #include "boost_settings_assets.h"
 #include "gauge_core.h"
 #include "warm_frame.h"
@@ -46,6 +47,7 @@ const char kLaunchPreferences[] = "/var/opt/hmi/data/ID5/ID6LibraryLab.launch.pr
 const char kBoostPrefs[] = ID6_BOOST_PREFS;
 const char kBoostLayout[] = ID6_BOOST_LAYOUT;
 const char kBoostDefaults[] = ID6_BOOST_DEFAULTS;
+const char kBoostRailScale[] = ID6_BOOST_RAIL_SCALE;
 const unsigned kAlertSignals[] = {BD_COOLANT, BD_OIL_TEMP, BD_OIL};
 const char* const kBoostCaptions[][2] = {
 #define SIGNAL(id, name, lo, hi, unit, wide, narrow) {wide,narrow},
@@ -87,7 +89,9 @@ class ID6LibraryLab : public bmw::PluginApp {
     BoostLayout boostLayout_;
     FullBoostDefaultsMode boostMode_;
     FullBoostState boostState_;
+    FullBoostRailScale boostRailScale_;
     const char *boostPreferences_,*boostAssignments_,*boostDefaults_;
+    const char *boostRailPreferences_;
     uint64_t boostToken_;
     bool boostSaved_;
     BoostAlerts boostAlerts_;
@@ -133,6 +137,8 @@ class ID6LibraryLab : public bmw::PluginApp {
         if (!loaded && legacy) loaded=boostLayout_.load("/var/opt/hmi/data/ID5/BoostDeck.signals");
         boostMode_.automatic=!loaded; // Existing valid layouts stay Custom.
         boostMode_.load(boostDefaults_);
+        if (legacy || strcmp(boostRailPreferences_,kBoostRailScale)) boostRailScale_.load(boostRailPreferences_);
+        memset(boostCaptions_,0xfe,sizeof boostCaptions_);
     }
 
     bool automaticBoost() const { return boostLayout_.diesel && boostMode_.automatic; }
@@ -151,6 +157,7 @@ class ID6LibraryLab : public bmw::PluginApp {
         stopWorker();
         resetBoostState();
         received_=false;
+        memset(boostCaptions_,0xfe,sizeof boostCaptions_);
         for (unsigned i=0;i<3;++i) boostAlerts_.reset(i);
         refreshBoostSettings();
         if (page_==boost) refreshBoost(bd_mono_ms());
@@ -173,6 +180,18 @@ class ID6LibraryLab : public bmw::PluginApp {
         updateModel(1831u,bmw::BasicString<char>(automaticBoost() ?
                     "Detected defaults are active; custom choices remain saved" :
                     "Custom choices are saved separately for each profile"));
+        const unsigned units=boostPrefs_.units(BD_RAIL);
+        for (unsigned i=0;i<BoostRailScale::COUNT;++i) {
+            FullBoostRailScale option;option.choice=i;
+            char value[40];
+            snprintf(value,sizeof value,"0 - %.0f %s",bd_display_selected(BD_RAIL,option.maximum(),units),
+                     bd_unit_selected(BD_RAIL,units));
+            updateModel(1851u+i,bmw::BasicString<char>(value));
+            if (boostRailScale_.choice==i) {
+                snprintf(label,sizeof label,"Diesel rail scale: %s",value);
+                updateModel(1850u,bmw::BasicString<char>(label));
+            }
+        }
     }
 
     bool boostSaveError() {
@@ -205,11 +224,22 @@ class ID6LibraryLab : public bmw::PluginApp {
             else next.choice[setting]=choice;
             if (!next.save(boostPreferences_)) return boostSaveError();
             boostPrefs_=next;
+            if (setting==BOOST_PRESSURE) memset(boostCaptions_,0xfe,sizeof boostCaptions_);
             if (setting>=BOOST_COOLANT_ALERT && setting<BOOST_SETTING_COUNT) boostAssignmentsChanged();
         }
         boostSaved_=true;
         updateModel(1899u,bmw::BasicString<char>(""));
         refreshBoostSettings();
+        if (page_==boost) { refreshBoost(bd_mono_ms());syncSurface(); }
+        return true;
+    }
+
+    template<unsigned Choice> bool setBoostRailScale(const bmw::Parcel&) {
+        FullBoostRailScale next=boostRailScale_;next.choice=Choice;
+        if (!next.save(boostRailPreferences_)) return boostSaveError();
+        boostRailScale_=next;boostSaved_=true;
+        memset(boostCaptions_,0xfe,sizeof boostCaptions_);
+        updateModel(1899u,bmw::BasicString<char>(""));refreshBoostSettings();
         if (page_==boost) { refreshBoost(bd_mono_ms());syncSurface(); }
         return true;
     }
@@ -549,6 +579,8 @@ class ID6LibraryLab : public bmw::PluginApp {
                 snprintf(state.values[i],sizeof state.values[i],"%s",last_[i]);
         }
         if (page_ == boost) {
+            state.shift_target=boostLayout_.diesel ? static_cast<uint32_t>(boostRailScale_.maximum()) : 0;
+            state.launch_mode=boostPrefs_.units(BD_RAIL);
             for (unsigned i=0;i<9;++i) state.boost_signal[i]=static_cast<uint8_t>(boostSignal(i));
             memcpy(state.boost_level,boostLevels_,sizeof state.boost_level);
             state.boost_color=boostPrefs_.color;
@@ -641,7 +673,11 @@ class ID6LibraryLab : public bmw::PluginApp {
         for (unsigned i=0;i<9;++i) {
             const unsigned signal=boostSignal(i);
             if (boostCaptions_[i]!=signal) {
-                updateModel(1840u+i,bmw::BasicString<char>(signal<BD_COUNT ? kBoostCaptions[signal][i==8] : "--"));
+                char label[40];
+                const char* caption=signal<BD_COUNT ? kBoostCaptions[signal][i==8] : "--";
+                if (signal==BD_RAIL && boostLayout_.diesel && full_boost_rail_caption(label,sizeof label,
+                        static_cast<unsigned>(boostRailScale_.maximum()),boostPrefs_.units(BD_RAIL))) caption=label;
+                updateModel(1840u+i,bmw::BasicString<char>(caption));
                 boostCaptions_[i]=static_cast<uint8_t>(signal);
             }
             if (boostState_.fresh(signal,now)) {
@@ -654,7 +690,7 @@ class ID6LibraryLab : public bmw::PluginApp {
                 const double raw=boostState_.frame().value[signal];
                 snprintf(value,sizeof value,"%.*f%s%s",digits,bd_display_selected(signal,raw,units),
                          *unit && *unit!='%' ? " " : "",unit);
-                boostLevels_[i]=static_cast<uint16_t>(bd_bar(signal,raw));
+                boostLevels_[i]=static_cast<uint16_t>(boostRailScale_.bar(signal,raw,boostLayout_.diesel));
             } else { strcpy(value,"--");boostLevels_[i]=0; }
             display(boost,i,value);
         }
@@ -1224,11 +1260,22 @@ class ID6LibraryLab : public bmw::PluginApp {
         registerPage<boostSettings>(214);
         registerPage<boostSettings>(215);
         registerPage<boostSettings>(2180);
+        registerPage<boostSettings>(2190);
         for (unsigned i=0;i<10;++i) registerPage<boostSettings>(2160+i);
         typedef bmw::Delegate<bool,const bmw::Parcel&> Action;
         typedef bool (*Handler)(void*,const bmw::Parcel&);
         Action action;
         action.m_obj=this;
+        const Handler railScales[]={
+            &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostRailScale<0> >,
+            &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostRailScale<1> >,
+            &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostRailScale<2> >,
+            &Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostRailScale<3> >};
+        typedef char rail_scale_count[sizeof railScales/sizeof railScales[0]==BoostRailScale::COUNT ? 1 : -1];
+        (void)sizeof(rail_scale_count);
+        for (unsigned i=0;i<BoostRailScale::COUNT;++i) {
+            action.m_exec=railScales[i];addHandler(5870u+i,action);
+        }
         action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostDefaults<true> >;
         addHandler(5850u,action);
         action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setBoostDefaults<false> >;
@@ -1276,11 +1323,12 @@ public:
                   const bmw::Bundle& cfg, const bmw::Bundle& res,
                   const char* shift_preferences=kShiftPreferences,const char* shift_profile=kShiftProfile,
                   const char* boost_preferences=kBoostPrefs,const char* boost_assignments=kBoostLayout,
-                  const char* boost_defaults=kBoostDefaults)
+                  const char* boost_defaults=kBoostDefaults,const char* boost_rail_scale=kBoostRailScale)
         : bmw::PluginApp(dispatcher, name, major, minor, version, cfg, res),
           page_(inactive), workerPage_(inactive), socket_(-1), child_(-1),
           queued_(false), childStopping_(false), received_(false), telemetryFailed_(false), lastPacket_(0),
           boostPreferences_(boost_preferences),boostAssignments_(boost_assignments),boostDefaults_(boost_defaults),
+          boostRailPreferences_(boost_rail_scale),
           boostToken_(0),boostSaved_(true),
 #ifdef ID6_EMULATOR
           boostFiles_(0),
@@ -1384,14 +1432,21 @@ public:
         pollUsb();
         reapTone();
 #ifdef ID6_EMULATOR
-        if (kEntryPage == boost && boostFiles_ != 7) {
+        if (kEntryPage == boost && boostFiles_ != 15) {
             const unsigned found=(access(boostPreferences_,F_OK)==0 ? 1u : 0u) |
                                  (access(boostAssignments_,F_OK)==0 ? 2u : 0u) |
-                                 (access(boostDefaults_,F_OK)==0 ? 4u : 0u);
+                                 (access(boostDefaults_,F_OK)==0 ? 4u : 0u) |
+                                 (access(boostRailPreferences_,F_OK)==0 ? 8u : 0u);
             if (boostFiles_!=found) {
+                const unsigned changed=boostFiles_^found;
                 boostFiles_=found;
-                loadBoostConfiguration();
-                boostAssignmentsChanged();
+                if (changed==8u) {
+                    boostRailScale_.load(boostRailPreferences_);
+                    memset(boostCaptions_,0xfe,sizeof boostCaptions_);
+                } else {
+                    loadBoostConfiguration();
+                    boostAssignmentsChanged();
+                }
                 refreshBoostSettings();
             }
         }

@@ -233,6 +233,16 @@ def return_action(identifier, remote, target):
     element(group,'raAction',id=remote)
     element(group,'hmiAction',id=identifier+10000,target=target)
 
+element(actions,'hmiAction',id=2190,target=2190)
+element(models,'raDataModel',id=1850,modelType='Richtext')
+element(prefs,'button',id=962,action=2190,model=1850,text='Diesel rail display scale')
+rail=element(element(states,'hmiState',id=2190,parentId=214,text='Diesel rail display scale'),'components')
+element(rail,'label',id=963,text='Display range only; not a BMW operating limit')
+for choice in range(4):
+    element(models,'raDataModel',id=1851+choice,modelType='Richtext')
+    return_action(4870+choice,5870+choice,214)
+    element(rail,'button',id=3870+choice,action=4870+choice,model=1851+choice)
+
 for row,(label,choices) in enumerate(BOOST_SETTINGS):
     state=2160+row
     element(actions,'hmiAction',id=state,target=state)
@@ -304,7 +314,7 @@ with (output / 'modules.txt').open('w') as modules:
         entry = 200 + i
         selected = {entry}
         if item['id'] == 'BoostDeck':
-            selected.update((214, 215, 2180, *range(2160, 2170)))
+            selected.update((214, 215, 2180, 2190, *range(2160, 2170)))
         if item['id'] == 'ShiftDeck':
             selected.update((216,219))
         if item['id'] == 'EngineCodes':

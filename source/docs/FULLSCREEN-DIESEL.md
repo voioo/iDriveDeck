@@ -55,6 +55,7 @@ Full-screen files keep their own namespace under `/var/opt/hmi/data/ID5/`:
 | `ID6LibraryLab.boost.prefs` | Existing G1/G2 color, units, style and alert choices. |
 | `ID6LibraryLab.boost.signals` | Existing B1/B2 layouts and wider B3–B6 channel ranges. |
 | `ID6LibraryLab.boost.signals.defaults` | D1 detected/custom mode. |
+| `ID6LibraryLab.boost.rail-scale` | R1 diesel rail display range. |
 
 Loads do not rewrite files. B1/B2 IDs remain limited to the original 31 channels;
 wider versions permit 39, 47, 55 or 58. Saving only old IDs keeps B2. If the
@@ -68,7 +69,7 @@ layout is not a transaction; resolve a save warning and reselect before relying
 on restart persistence. Failed saves retain the live choice and remain visible
 on return to the dashboard. The emulator uses separate shared-memory files,
 whose filesystem does not offer atomic rename. Its host bridge validates and
-preserves G1/G2, B1–B6 and D1 records rather than assuming B2.
+preserves G1/G2, B1–B6, D1 and R1 records rather than assuming B2.
 
 Back up the full matching bundle and all present settings, recording absent
 paths, before any separately authorized installation. Rollback restores that
@@ -87,12 +88,12 @@ host fakes are linked but not executed. All outputs are private and removed afte
 the test. This is not a QNX build or a substitute for licensed
 toolchain/framework inputs.
 
-The surface protocol is **v4 (`ID6V`), 496 bytes**. It retains measured Warm/Shift
-states and names the expanded Boost channels and empty slots. Versions 1–3 are
+The surface protocol is **v5 (`ID6W`), 496 bytes**. It retains measured Warm/Shift
+states and names the expanded Boost channels, empty slots and rail range/units. Versions 1–4 are
 rejected. Rebuild the complete matching bundle from fresh output: Library,
 workers, renderer, all app/optional companion plugins, layouts and emulator
-components. This work builds on [ShiftDeck #203](https://github.com/inotbarnacle/iDriveDeck/pull/203)
-and [WarmDeck #209](https://github.com/inotbarnacle/iDriveDeck/pull/209).
+components. This work builds on [ShiftDeck](https://github.com/voioo/iDriveDeck/pull/4)
+and [WarmDeck](https://github.com/voioo/iDriveDeck/pull/3).
 
 Host tests exercise production Library callbacks, private settings, local UDP,
 the actual full-screen workers and C rasterizer. They cover legacy layouts,
@@ -110,8 +111,8 @@ Lambda/STFT action mismatch.
 
 ![Synthetic custom readings](images/boost-fullscreen-custom-host-synthetic.png)
 
-The selectable diesel scale from #205 still needs its full-screen port; the
-legacy rail gauge retains its existing display range here. EntryNav2 parity,
+The [selectable diesel rail scale](BOOST-DIESEL-SCALE.md#full-screen-boostdeck)
+uses its own setting and leaves the numeric reading unchanged. EntryNav2 parity,
 exact ECU support, licensed QNX/ABI checks, parked factory-function regression,
 standalone operation and rollback validation remain open. No firmware profile,
 native release binary or physical vehicle result is added by this change.

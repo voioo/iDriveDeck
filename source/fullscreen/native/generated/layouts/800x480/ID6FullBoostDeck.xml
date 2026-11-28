@@ -14,6 +14,31 @@
       <raAction id="5750" />
       <raAction id="5850" />
       <raAction id="5851" />
+      <hmiAction id="2190" target="2190" />
+      <combinedAction id="4870">
+        <actions>
+          <raAction id="5870" />
+          <hmiAction id="14870" target="214" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="4871">
+        <actions>
+          <raAction id="5871" />
+          <hmiAction id="14871" target="214" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="4872">
+        <actions>
+          <raAction id="5872" />
+          <hmiAction id="14872" target="214" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="4873">
+        <actions>
+          <raAction id="5873" />
+          <hmiAction id="14873" target="214" />
+        </actions>
+      </combinedAction>
       <hmiAction id="2160" target="2160" />
       <combinedAction id="4000">
         <actions>
@@ -739,6 +764,11 @@
       <raDataModel id="1880" modelType="Richtext" />
       <raDataModel id="1830" modelType="Richtext" />
       <raDataModel id="1831" modelType="Richtext" />
+      <raDataModel id="1850" modelType="Richtext" />
+      <raDataModel id="1851" modelType="Richtext" />
+      <raDataModel id="1852" modelType="Richtext" />
+      <raDataModel id="1853" modelType="Richtext" />
+      <raDataModel id="1854" modelType="Richtext" />
       <raDataModel id="1800" modelType="Richtext" />
       <raDataModel id="1801" modelType="Richtext" />
       <raDataModel id="1802" modelType="Richtext" />
@@ -936,6 +966,7 @@
           <label id="1897" model="1830" />
           <button id="960" action="5850" text="Use detected diesel defaults" />
           <button id="961" action="5851" text="Use custom diesel layout" />
+          <button id="962" action="2190" model="1850" text="Diesel rail display scale" />
           <button id="930" action="2160" text="" model="1800" />
           <button id="931" action="2161" text="" model="1801" />
           <button id="932" action="2162" text="" model="1802" />
@@ -960,6 +991,15 @@
           <button id="956" action="4586" text="" model="1826" />
           <button id="957" action="4587" text="" model="1827" />
           <button id="958" action="4588" text="" model="1828" />
+        </components>
+      </hmiState>
+      <hmiState id="2190" parentId="214" text="Diesel rail display scale">
+        <components>
+          <label id="963" text="Display range only; not a BMW operating limit" />
+          <button id="3870" action="4870" model="1851" />
+          <button id="3871" action="4871" model="1852" />
+          <button id="3872" action="4872" model="1853" />
+          <button id="3873" action="4873" model="1854" />
         </components>
       </hmiState>
       <hmiState id="2160" parentId="214" text="Pressure">

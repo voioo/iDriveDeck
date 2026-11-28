@@ -38,7 +38,7 @@ class LibraryOverlay:
         self._image = None
         self._config = None if data_dir is None else (
             Path(data_dir)/"library-boost.prefs", Path(data_dir)/"library-boost.signals",
-            Path(data_dir)/"library-boost.defaults"
+            Path(data_dir)/"library-boost.defaults", Path(data_dir)/"library-boost.rail-scale"
         )
         threading.Thread(target=self._receive, daemon=True).start()
         self._stop = threading.Event()
@@ -118,7 +118,7 @@ class LibraryOverlay:
         try:
             _, kind_text, encoded = line.decode("ascii").split()
             kind = int(kind_text)
-            if kind not in (0, 1, 2):
+            if kind not in (0, 1, 2, 3):
                 return
             data = bytes.fromhex(encoded)
             if not self._valid_config(kind,data):
@@ -138,6 +138,7 @@ class LibraryOverlay:
             return len(data)==11 and data[:2]==b'G\x02' and data[2]<9 and all(
                 value<limit for value,limit in zip(data[3:],choices))
         if kind==2: return len(data)==3 and data[:2]==b'D\x01' and data[2]<=1
+        if kind==3: return len(data)==3 and data[:2]==b'R\x01' and data[2]<4
         if kind!=1 or len(data)<3 or data[0]!=ord('B') or not 1<=data[1]<=6 or data[2]>1:
             return False
         stride=11 if data[1]==1 else 9

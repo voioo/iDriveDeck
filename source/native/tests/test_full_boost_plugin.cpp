@@ -66,17 +66,18 @@ static void capture(const char* name) {
 
 int main() {
     char directory[]="/tmp/full-boost-plugin.XXXXXX";assert(mkdtemp(directory));
-    char preferences[128],assignments[128],mode[128],missing[128];
+    char preferences[128],assignments[128],mode[128],scale[128],missing[128];
     snprintf(preferences,sizeof preferences,"%s/preferences",directory);
     snprintf(assignments,sizeof assignments,"%s/assignments",directory);
     snprintf(mode,sizeof mode,"%s/mode",directory);
+    snprintf(scale,sizeof scale,"%s/scale",directory);
     snprintf(missing,sizeof missing,"%s/missing/file",directory);
     BoostLayout legacy;legacy.diesel=true;assert(legacy.save(assignments));
     const std::string original=file_bytes(assignments);
     bmw::IDispatcher dispatcher;bmw::Bundle bundle;bmw::RHMIInterfaceVersion version={1};
     fake_reset();
     ID6LibraryLab app(dispatcher,bmw::BasicString<char>("HostBoost"),1,0,version,bundle,bundle,
-                      missing,missing,preferences,assignments,mode);
+                      missing,missing,preferences,assignments,mode,scale);
     assert(app.onInit() && app.boostLayout_.diesel && !app.boostMode_.automatic);
     assert(file_bytes(assignments)==original && access(mode,F_OK)!=0);
     action(5580);action(5500+BD_REAGENT_DEMAND);
@@ -161,21 +162,83 @@ int main() {
     fake_reset();
     {
         ID6LibraryLab fresh(dispatcher,bmw::BasicString<char>("FreshBoost"),1,0,version,bundle,bundle,
-                            missing,missing,preferences,assignments,mode);
+                            missing,missing,preferences,assignments,mode,scale);
         assert(fresh.onInit() && fresh.boostMode_.automatic && !fresh.boostLayout_.diesel);
         fresh.focusPage(boost,true);
         bd_frame gasoline;memset(&gasoline,0,sizeof gasoline);gasoline.sent_ms=clock_ms;
         gasoline.valid=BD_LEGACY_MASK;
         const double values[]={12,14.7,4,30,70,100,3.2,90,12};
         for (unsigned i=0;i<9;++i) gasoline.value[i]=values[i];
-        const int length=bd_encode(&gasoline,packet,sizeof packet);assert(length>0);
+        int length=bd_encode(&gasoline,packet,sizeof packet);assert(length>0);
         fresh.render(packet,static_cast<unsigned>(length),clock_ms);fresh.syncSurface();capture("gasoline-live");
         action(5000+9*16+1);
         assert(fresh.automaticBoost());
         FullBoostDefaultsMode restarted;restarted.automatic=false;restarted.load(mode);assert(restarted.automatic);
         BoostLayout restarted_layout;assert(restarted_layout.load(assignments) && restarted_layout.diesel);
+        fresh.socket_=gauge_bind(port(boost));assert(fresh.socket_>=0);fresh.workerPage_=boost;
+        child=waiting_child();fresh.child_=child;fresh.childStopping_=false;
+        sender=gauge_bind(BOOST_ACTIVE_PORT);assert(sender>=0);
+        bd_frame rail;memset(&rail,0,sizeof rail);rail.sent_ms=clock_ms;
+        rail.valid=BD_BIT(BD_RAIL)|BD_BIT(BD_RPM)|BD_BIT(BD_COOLANT);
+        rail.value[BD_RAIL]=1000;rail.value[BD_RPM]=1500;rail.value[BD_COOLANT]=75;
+        bd_cap_frame caps={fresh.boostToken_,clock_ms,static_cast<uint32_t>(child),rail.valid,rail.valid};
+        length=bd_auto_encode(&caps,&rail,packet,sizeof packet);assert(length>0);
+        send_bytes(fresh,sender,packet,length);
+        assert(captured.boost_signal[1]==BD_RAIL && captured.boost_level[1]==500);
+        const unsigned maxima[]={1000,1600,2000,2500},levels[]={1000,625,500,400};
+        const char* const range[3][4]={{"14504","23206","29008","36259"},
+            {"1000","1600","2000","2500"},{"100000","160000","200000","250000"}};
+        for (unsigned units=0;units<3;++units) {
+            action(5000+units);
+            const std::string prefs_before=file_bytes(preferences),layout_before=file_bytes(assignments),mode_before=file_bytes(mode);
+            for (unsigned choice=0;choice<4;++choice) {
+                action(5870+choice);
+                assert(captured.boost_level[1]==levels[choice] && captured.shift_target==maxima[choice]);
+                assert(captured.launch_mode==units && fresh.child_==child && !fresh.childStopping_ && launches==2);
+                const std::string caption=std::string("Rail 0-")+range[units][choice];
+                assert(text_model(1841)==caption);
+                assert(!strcmp(captured.values[1],units==0 ? "14504 psi" : units==1 ? "1000 bar" : "100000 kPa"));
+                assert(file_bytes(preferences)==prefs_before && file_bytes(assignments)==layout_before && file_bytes(mode)==mode_before);
+                const std::string record=file_bytes(scale);assert(record.size()==3 && record[0]=='R' && record[1]==1 && record[2]==static_cast<char>(choice));
+                if (units==1 && choice==2) capture("diesel-rail-scale");
+            }
+        }
+        const std::string saved_scale=file_bytes(scale);
+        fresh.boostRailPreferences_=missing;action(5870);
+        assert(fresh.boostRailScale_.choice==3 && file_bytes(scale)==saved_scale && strstr(captured.status,"not saved"));
+        assert(fresh.child_==child && !fresh.childStopping_);
+        fresh.boostRailPreferences_=scale;action(5873);assert(!strstr(captured.status,"not saved"));
+        clock_ms+=1;caps.sent_ms=rail.sent_ms=clock_ms;rail.value[BD_RAIL]=0;
+        length=bd_auto_encode(&caps,&rail,packet,sizeof packet);assert(length>0);send_bytes(fresh,sender,packet,length);
+        assert(!strcmp(captured.values[1],"0 kPa") && !captured.boost_level[1]);
+        clock_ms+=BD_STALE_MS;poll_app(fresh);assert(!strcmp(captured.values[1],"--") && !captured.boost_level[1]);
+        action(5851);assert(waitpid(child,0,0)==child);fresh.child_=-1;
+        action(5588);action(5500+BD_RAIL);
+        fresh.socket_=gauge_bind(port(boost));assert(fresh.socket_>=0);fresh.workerPage_=boost;
+        child=waiting_child();fresh.child_=child;fresh.childStopping_=false;
+        rail.sent_ms=clock_ms;rail.value[BD_RAIL]=1000;
+        length=bd_encode(&rail,packet,sizeof packet);assert(length>0);send_bytes(fresh,sender,packet,length);
+        assert(captured.boost_signal[8]==BD_RAIL && captured.boost_level[8]==400 && text_model(1848)=="Rail 0-250000");
+        assert(!strcmp(captured.values[8],"100000 kPa"));
+        action(5000+9*16);assert(waitpid(child,0,0)==child);fresh.child_=-1;
+        fresh.socket_=gauge_bind(port(boost));assert(fresh.socket_>=0);fresh.workerPage_=boost;
+        child=waiting_child();fresh.child_=child;fresh.childStopping_=false;
+        length=bd_encode(&rail,packet,sizeof packet);assert(length>0);send_bytes(fresh,sender,packet,length);
+        assert(captured.boost_signal[5]==BD_RAIL && captured.boost_level[5]==1000 && captured.shift_target==0);
+        assert(text_model(1845)==kBoostCaptions[BD_RAIL][0] && file_bytes(scale)==saved_scale);
+        close(sender);
         assert(fresh.onFinalize());
+        assert(waitpid(child,0,0)==child);fresh.child_=-1;
     }
-    unlink(preferences);unlink(assignments);unlink(mode);assert(rmdir(directory)==0);
+    fake_reset();
+    {
+        const std::string prefs_before=file_bytes(preferences),layout_before=file_bytes(assignments),mode_before=file_bytes(mode),scale_before=file_bytes(scale);
+        ID6LibraryLab restarted(dispatcher,bmw::BasicString<char>("RestartBoost"),1,0,version,bundle,bundle,
+                                missing,missing,preferences,assignments,mode,scale);
+        assert(restarted.onInit() && restarted.boostRailScale_.choice==3 && !restarted.boostLayout_.diesel);
+        assert(file_bytes(preferences)==prefs_before && file_bytes(assignments)==layout_before && file_bytes(mode)==mode_before && file_bytes(scale)==scale_before);
+        assert(restarted.onFinalize());
+    }
+    unlink(preferences);unlink(assignments);unlink(mode);unlink(scale);assert(rmdir(directory)==0);
     puts("Full-screen Boost production callbacks/UDP: legacy/custom persistence, 64-bit slots, units, generation/peer/time validation, zero/stale values, defaults and save errors passed.");
 }

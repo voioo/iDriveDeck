@@ -3,6 +3,7 @@
 #include "../../../native/src/common/boost_defaults.h"
 #include "fullscreen_preferences.h"
 #include "../../../native/src/plugins/boost_defaults_mode.h"
+#include "../../../native/src/plugins/boost_rail_scale.h"
 #include <string.h>
 #include <sys/types.h>
 
@@ -10,6 +11,14 @@ struct FullBoostDefaultsMode : BoostDefaultsMode {
     bool save(const char* path) const {
         if (!*path) return false;
         const unsigned char bytes[]={'D',1,static_cast<unsigned char>(automatic)};
+        return saveFullScreenRecord(path,bytes,sizeof bytes);
+    }
+};
+
+struct FullBoostRailScale : BoostRailScale {
+    bool save(const char* path) const {
+        if (!*path || choice>=COUNT) return false;
+        const unsigned char bytes[]={'R',1,static_cast<unsigned char>(choice)};
         return saveFullScreenRecord(path,bytes,sizeof bytes);
     }
 };

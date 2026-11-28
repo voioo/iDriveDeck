@@ -49,6 +49,7 @@ jobs:
           python3 -B source/tools/test_full_shift_resources.py
           make -C source/native build/full-warm-surface.so CC=${{ matrix.cc }}
           python3 -B source/tools/preview_full_boost.py --renderer source/native/build/full-warm-surface.so --models source/native/build/full-boost-models/detected-defaults.bin --out /tmp/full-boost-host-synthetic.png
+          python3 -B source/tools/preview_full_boost.py --renderer source/native/build/full-warm-surface.so --models source/native/build/full-boost-models/diesel-rail-scale.bin --out /tmp/full-rail-host-synthetic.png
           python3 - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile
@@ -64,7 +65,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: full-boost-host-preview-${{ matrix.cc }}
-          path: /tmp/full-boost-host-synthetic.png
+          path: |
+            /tmp/full-boost-host-synthetic.png
+            /tmp/full-rail-host-synthetic.png
   memory:
     runs-on: ubuntu-24.04
     steps:

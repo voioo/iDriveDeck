@@ -13,10 +13,92 @@ All seven remaining feature branches had merge conflicts with this release.
 Discovery #201 is reconciled at signed `8755619`; its 121 host cases pass,
 including upstream's EGS-only legacy temperature probe and both heartbeat
 deadline regressions. Collector code, earlier plans and fixtures are unchanged.
-The updated branch is pushed; new CI is pending. The configured signer is
-working again. Remaining native branches need reconciliation with upstream's
-DCT option, units and source-layout changes before their older results can
-support an updated revision. No vehicle, firmware or QNX validation is inferred.
+The updated branch is pushed and its five workflows pass. The configured signer
+is working again. The remaining branches are now reconciled with upstream's
+DCT option, units and source-layout changes. No vehicle, firmware or QNX
+validation is inferred.
+
+Reconciliation checkpoint, 28 November: all seven existing drafts now contain
+signed merges of upstream `9ded391`, and all five workflows pass on each branch:
+
+| PR | Updated source | Current evidence |
+| --- | --- | --- |
+| [#201](https://github.com/inotbarnacle/iDriveDeck/pull/201) | `8755619` | 121 tool cases; collector/plans/fixtures unchanged; EGS-only probe and heartbeat deadlines preserved. |
+| [#202](https://github.com/inotbarnacle/iDriveDeck/pull/202) | `506d872` | 21 native programs, 151 native-suite Python cases and 24 tool/resource cases; GCC/Clang, locale, static and sanitizer checks. |
+| [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) | `2c8e3b0` | 11 native programs, 92 Python regressions and 11 resource cases; all 21 gasoline targets, migrations, callbacks and generated assets. |
+| [#204](https://github.com/inotbarnacle/iDriveDeck/pull/204) | `a70c6f3` | 13 native programs, 106 Python regressions and four resource cases; status/raw/OBD reads and confirmed-clear guard preserved. |
+| [#205](https://github.com/inotbarnacle/iDriveDeck/pull/205) | `aabdc8c` | 11 native programs, 92 Python regressions and five resource cases; current DCT option and codec preserved. |
+| [#209](https://github.com/inotbarnacle/iDriveDeck/pull/209) | `1bc75de` | Ten native programs, 92 Python regressions and three resource cases; units/target callbacks and sanitizers pass. |
+| [#216](https://github.com/inotbarnacle/iDriveDeck/pull/216) | `51a8a77` | 13 native programs, 119 Python regressions, seven resource cases and 33 top-level installer tests; GCC/Clang, static and sanitizer checks pass. |
+
+The #202 merge keeps upstream's DCT source, request-start timestamps and retired
+HUD cleanup. The added DCT regression initially expected an immediate oil read;
+its updated fixture checks the capability bitmap first and proves that an
+unsupported oil reading cannot suppress the selected DCT temperature. #209 uses
+upstream's existing target models separately from its DCT/units controls, avoiding
+the old draft's ID collisions. Changing units updates measurements and targets
+together. Upstream already contains the worker freshness change, so #209's title
+and description now focus on the remaining UI behavior.
+
+A volunteer in #201 offered an F11 N57, independent ISTA/BimmerLink readings and
+an existing oil-temperature capture. The
+[reply](https://github.com/inotbarnacle/iDriveDeck/pull/201#issuecomment-7234728657)
+provides the pinned tested revision, an offline first-plan review, Windows
+commands and separate parked approval. No new vehicle result has been received.
+
+The #203 migration preserves all 21 gasoline targets in `ShiftDeck.v2.prefs`
+and the Speed menu. Diesel settings now use a separate S2 sidecar; legacy imports
+follow upstream's conversion without rewriting their source files. Diesel image
+IDs avoid upstream's expanded gasoline artwork. Missing current gasoline images
+are generated from upstream source, while supplied images retain their bytes.
+
+The #204 merge uses upstream's shared description helper only in the legacy
+gasoline view. DDE/raw output and the clear-confirmation guard are retained.
+The #216 merge follows upstream's retired-HUD cleanup and native Android Auto
+transport policy. Installer fixtures now cover the new full-screen/EntryNav2
+staging paths without executable native inputs. The existing all-app recovery
+test caught an image archive requirement for text-only XDrive Control; correcting
+that requirement restores the baseline installer suite without vehicle commands.
+
+The native feature scope remains standard NBT Evo; equivalent full-screen/
+EntryNav2 features and the complete goal's QNX/vehicle validation remain open.
+The new combined source passes the local checks recorded below; its fork CI is
+next. The older `f9d5555` remains a historical checkpoint. Draft status follows
+the objective's requirement for applicable physical validation; host CI alone
+does not satisfy it. Upstream descriptions/comments remain human friendly.
+
+Combined-source update, 28 November: `diesel/integration-v0719` reconstructs
+all seven published feature histories above with signed merge commits. It keeps
+the capability envelope/defaults and selectable rail scale together, as well as
+the telemetry and DPF fake-MOST responders. The production build-driver cases
+pass with both capability-dependent workers and DPFDeck present.
+
+The first combined run exposed a missing `boost-defaults.o` host-test dependency
+for the rail-scale plugin. The integration fixes that link and explicitly selects
+Custom layout in the custom-scale fixture. An additional production callback
+check changes the rail scale with the detected rail signal in slot 1; the reading,
+saved assignments and worker identity remain intact. Its files stay in the test's
+private directory. Full local validation passes: 34 distinct native test programs
+and 192 native-suite Python cases. The 160-case tool/resource suite also passes;
+with the four fault-resource cases counted once, coverage is 352 distinct Python
+cases. The two modified Boost production callback programs pass ASan/UBSan.
+
+The tested native subtree is `7d89243f98d77ac706d69e33909928fe56e42a5b`.
+[Combined source](https://github.com/voioo/iDriveDeck/tree/diesel/integration-v0719)
+will receive independent fork CI; no new upstream PR is opened.
+
+All 160 tool/resource cases pass together. An isolated full assets build
+reproduces BoostDeck, ShiftDeck, WarmDeck and DPFDeck XML plus Shift constants.
+The reagent preview renders captured production model updates with the combined
+assets and is labeled synthetic. This does not establish head-unit rendering.
+
+The full-screen audit confirms a separate 31-channel core and consumer, a
+6,000–8,000-RPM Shift renderer/settings path, and a Warm renderer that reparses
+rounded temperature strings. These need coherent feature ports. Its public
+renderer builds and links on the host without private inputs and confirms the
+496-byte state contract. Physical/emulator preprocessor branches of the Library
+also pass host C++98 syntax with the required build-script defines. These are
+preparation for renderer tests, not QNX or firmware validation. No full-screen/EntryNav2 feature parity is claimed.
 
 Publication update, 27 November: the configured SSH signer is working and the
 focused source commits are signed and published. Earlier references below to
@@ -1207,13 +1289,15 @@ not exact-ECU support, a BMW plausibility limit or a native app mapping.
 ## Outstanding scope
 
 The overall N57 objective remains active. These drafts do not complete it.
-The focused drafts and human-friendly descriptions are published; corrected
-DPF tests and the signed combined checkout have green source CI.
+The focused drafts and human-friendly descriptions are published. Current branch
+evidence is recorded at the beginning of this document; the older combined
+checkout's green CI predates upstream v0.7.19. The new combined local run is
+recorded above; its independent fork CI remains pending.
 Next: incorporate maintainer feedback and continue evidence review for the
 remaining BMW-specific oil, DPF mass/counter and transmission states.
-Keep the locale fix in its separate #217 review; #202 alone still needs it for
-a comma-decimal numeric environment. Continue evidence review and incorporate
-maintainer feedback before expanding scope.
+The maintainer incorporated #217's locale fix into upstream v0.7.19, and the
+updated branches retain it. Continue evidence review and incorporate maintainer
+feedback before expanding scope.
 Native SCR use still requires exact-ECU comparison and separately authorized
 parked validation. Remaining transmission signals still need fully
 corroborated layouts/semantics and request policies before implementation. Continue

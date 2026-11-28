@@ -36,16 +36,17 @@ static void send_packet(BoostDeck& app, const char* packet, int size) {
 int main() {
     char directory[]="/tmp/boost-defaults-plugin.XXXXXX";
     assert(mkdtemp(directory));
-    char prefs[256],assignments[256],mode[256];
+    char prefs[256],assignments[256],mode[256],scale[256];
     snprintf(prefs,sizeof prefs,"%s/prefs",directory);
     snprintf(assignments,sizeof assignments,"%s/signals",directory);
     snprintf(mode,sizeof mode,"%s/signals.defaults",directory);
+    snprintf(scale,sizeof scale,"%s/scale",directory);
     const unsigned char g1[]={'G',1,0,1};
     assert(savePersistentBytes(prefs,g1,sizeof g1));
     bmw::IDispatcher dispatcher; bmw::Bundle bundle; bmw::RHMIInterfaceVersion version={1};
     fake_reset();
     {
-        BoostDeck app(dispatcher,bmw::BasicString<char>("BoostDeck"),1,0,version,bundle,bundle,prefs,assignments);
+        BoostDeck app(dispatcher,bmw::BasicString<char>("BoostDeck"),1,0,version,bundle,bundle,prefs,assignments,scale);
         assert(app.onInit() && app.fd_>=0 && app.defaults_mode_.automatic && !app.diesel_);
         action(503);
         assert(app.automaticDiesel() && !bd_slots_mask(app.automatic_slots_));
@@ -71,6 +72,15 @@ int main() {
         assert(app.displaySignal(0)==BD_COOLANT && app.displaySignal(1)==BD_RAIL);
         assert(app.displaySignal(2)==BD_EMPTY_SLOT); // a valid-looking unadvertised oil value cannot select a gauge
         assert(last(300).text=="59.0 \260C" && last(301).text=="1000 bar" && last(302).text=="--");
+        // A detected rail gauge occupies slot 1 here, not the saved custom slot 5.
+        assert(last(371).text=="Rail 0-2000" && last(321).number==55016);
+        action(2560);
+        assert(last(371).text=="Rail 0-1000" && last(321).number==55032);
+        assert(last(301).text=="1000 bar" && last(300).text=="59.0 \260C");
+        assert(app.collector_==child && app.capability_token_==42);
+        assert(bytes(assignments)==saved);
+        action(2562);
+        assert(last(371).text=="Rail 0-2000" && last(321).number==55016);
         assert(bytes(assignments)==saved);
         bd_cap_frame regression=report; regression.known=regression.supported=0;
         size=bd_auto_encode(&regression,&sample,packet,sizeof packet);
@@ -160,6 +170,6 @@ int main() {
         assert(savePersistentBytes(mode,invalid[0],n));
         saved.automatic=true; saved.load(mode); assert(saved.automatic);
     }
-    unlink(mode); unlink(assignments); unlink(prefs); assert(rmdir(directory)==0);
+    unlink(scale); unlink(mode); unlink(assignments); unlink(prefs); assert(rmdir(directory)==0);
     puts("BoostDeck automatic/custom callbacks, production UDP, identity/freshness guards, legacy layouts and save errors passed.");
 }

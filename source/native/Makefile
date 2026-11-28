@@ -120,7 +120,7 @@ build/test-reagent: tests/test_reagent.c tests/fixtures/boost_pressure_frame.h $
 build/test-obd-extra-capabilities: tests/test_obd_extra_capabilities.c src/common/obd_capabilities_extra.c src/common/obd_capabilities.c $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common $(filter %.c,$^) -o $@
 
-build/test-reagent-plugin: tests/test_reagent_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) sdk/bmw_list.h | build
+build/test-reagent-plugin: tests/test_reagent_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) src/plugins/boost_rail_scale.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
 test-reagent: build/test-reagent build/test-obd-extra-capabilities build/test-reagent-plugin build/boost-deck
@@ -129,7 +129,7 @@ test-reagent: build/test-reagent build/test-obd-extra-capabilities build/test-re
 	./build/test-reagent-plugin
 	$(PYTHON) -B tests/test_reagent_transport.py
 
-build/test-pressure-plugin: tests/test_pressure_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) sdk/bmw_list.h | build
+build/test-pressure-plugin: tests/test_pressure_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) src/plugins/boost_rail_scale.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
 test-pressure: build/test-pressure build/test-pressure-plugin
@@ -139,17 +139,17 @@ test-pressure: build/test-pressure build/test-pressure-plugin
 build/boost-defaults.o: src/common/boost_defaults.c $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common -c $< -o $@
 
-build/test-boost-defaults-plugin: tests/test_boost_defaults_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) sdk/bmw_list.h | build
+build/test-boost-defaults-plugin: tests/test_boost_defaults_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) src/plugins/boost_rail_scale.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
-build/test-egt-plugin: tests/test_egt_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) sdk/bmw_list.h | build
+build/test-egt-plugin: tests/test_egt_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) src/plugins/boost_rail_scale.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
 test-egt: build/test-egt build/test-egt-plugin
 	./build/test-egt
 	./build/test-egt-plugin
 
-build/test-egr-plugin: tests/test_egr_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) sdk/bmw_list.h | build
+build/test-egr-plugin: tests/test_egr_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h $(HEADERS) src/plugins/boost_rail_scale.h sdk/bmw_list.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
 test-egr: build/test-egr build/test-egr-plugin
@@ -240,8 +240,8 @@ build/test-boost-rail-scale: tests/test_boost_rail_scale.cpp build/boost-test-co
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/common $(filter %.cpp %.o,$^) -lm -o $@
 
 # MIT framework stand-in shared with PR #143/#203/#204; no factory libraries.
-build/test-boost-scale-plugin: tests/test_boost_scale_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o src/plugins/boost_deck.cpp src/plugins/boost_rail_scale.h src/plugins/boost_preferences.h src/plugins/dial_scales.h src/common/gauge_preferences.h src/common/diagnostic_gateway.h src/common/diagnostic_worker.h sdk/bmw_list.h | build
-	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o -lm -o $@
+build/test-boost-scale-plugin: tests/test_boost_scale_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_rail_scale.h src/plugins/boost_preferences.h src/plugins/boost_defaults_mode.h src/plugins/dial_scales.h src/common/gauge_preferences.h src/common/diagnostic_gateway.h src/common/diagnostic_worker.h $(HEADERS) sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
 
 test-boost-scale: build/test-boost-rail-scale build/test-boost-scale-plugin
 	./build/test-boost-rail-scale

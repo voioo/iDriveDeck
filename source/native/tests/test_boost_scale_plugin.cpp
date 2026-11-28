@@ -37,10 +37,11 @@ static std::string bytes(const char* path) {
 int main() {
     char directory[]="/tmp/boost-scale-plugin.XXXXXX";
     assert(mkdtemp(directory));
-    char prefs[256],assignments[256],scale[256];
+    char prefs[256],assignments[256],scale[256],mode[256];
     snprintf(prefs,sizeof prefs,"%s/prefs",directory);
     snprintf(assignments,sizeof assignments,"%s/signals",directory);
     snprintf(scale,sizeof scale,"%s/scale",directory);
+    snprintf(mode,sizeof mode,"%s/signals.defaults",directory);
     const unsigned char legacy[]={'G',1,0,1};
     assert(savePersistentBytes(prefs,legacy,sizeof legacy));
     bmw::IDispatcher dispatcher;
@@ -54,6 +55,7 @@ int main() {
         assert(app.rail_scale_.maximum()==2000 && !app.diesel_);
         assert(last(128).text=="Diesel rail scale: 0 - 2000 bar");
         action(503);
+        action(507); // Exercise the saved custom layout rather than detected defaults.
         assert(last(375).text=="Rail 0-2000");
         const std::string saved_assignments=bytes(assignments);
         sample(app,1000);
@@ -117,7 +119,7 @@ int main() {
         assert(app.rail_scale_.choice==BoostRailScale::DEFAULT);
         assert(app.onFinalize());
     }
-    unlink(scale); unlink(assignments); unlink(prefs);
+    unlink(scale); unlink(assignments); unlink(prefs); unlink(mode);
     assert(rmdir(directory)==0);
     puts("BoostDeck production range callbacks, bars/dials/vertical, units, staleness and save failure passed.");
 }

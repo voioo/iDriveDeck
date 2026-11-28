@@ -9,7 +9,7 @@
 #include "surface_shift.h"
 #include "gauge_core.h"
 #include "boost_scale_label.h"
-#include "dme_descriptions.h"
+#include "fault_view.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -549,26 +549,24 @@ void surface_draw(struct canvas c, const struct surface_state *s)
     case surface_codes:
         if (s->selection==234 || s->selection==236) {
             card(c,24,48,592,147,false);
-            text(c,42,58,"Clear engine codes?",bright,24);
+            text(c,42,58,"Clear BMW fault memory?",bright,24);
             text(c,42,92,"Erases stored codes and freeze-frame data.",muted,17);
             text(c,42,115,"Park with ignition on and engine off.",muted,17);
-            button(c,72,146,170,35,"Cancel",s->selection==236);
-            button(c,325,146,220,35,"Confirm clear",s->selection==234);
+            text(c,42,137,"Permanent emissions codes are ECU-controlled.",muted,13);
+            button(c,72,159,170,28,"Cancel",s->selection==236);
+            button(c,325,159,220,28,"Confirm clear",s->selection==234);
             break;
         }
         for (unsigned i=0; i<4; ++i) {
             if (!s->values[i][0]) continue;
             int y=41+i*37;
             card(c,24,y,592,34,false);
-            unsigned code, flag;
-            if (sscanf(s->values[i],"%6x  status %2x",&code,&flag)==2) {
-                char label[32];
-                snprintf(label,sizeof label,"%06X  %s",code,flag&1u ? "Active" : flag&4u ? "Pending" : "Stored");
-                text(c,36,y,label,bright,16);
-                const char *description=dme_code_description(code);
-                text(c,36,y+16,description,muted,word_width(description,15)>558 ? 12 : 15);
-            } else text(c,36,y,s->values[i],bright,16);
+            char label[96],detail[192];
+            full_fault_row(s->values[i],s->launch_mode,s->boost_style,label,sizeof label,detail,sizeof detail);
+            text(c,36,y,label,bright,16);
+            text(c,36,y+16,detail,muted,word_width(detail,15)>558 ? 12 : 15);
         }
+        button(c,24,194,190,29,"Read BMW codes",s->selection==5890);
         button(c,331,194,130,29,"Next codes  >",s->selection==230);
         button(c,490,194,128,29,"Clear codes",s->selection==232);
         break;
@@ -594,5 +592,6 @@ void surface_draw(struct canvas c, const struct surface_state *s)
     }
     default: break;
     }
-    if (s->status[0] && s->page!=surface_warm) text(c,26,211,s->status,muted,13);
+    if (s->status[0] && s->page!=surface_warm)
+        text(c,26,s->page==surface_codes ? 225 : 211,s->status,muted,s->page==surface_codes ? 11 : 13);
 }

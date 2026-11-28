@@ -22,7 +22,21 @@ jobs:
       - name: Host worker, decoder, production UI and resource regressions
         run: make -C source/native test CC=${{ matrix.cc }} CXX=${{ matrix.cxx }}
       - name: Production plugin syntax check
-        run: ${{ matrix.cxx }} -std=gnu++98 -Wall -Wextra -Werror -Isource/native/sdk -Isource/native/src/common -Isource/native/src/ipc -fsyntax-only source/native/src/plugins/engine_codes.cpp
+        run: |
+          ${{ matrix.cxx }} -std=gnu++98 -Wall -Wextra -Werror -Isource/native/sdk -Isource/native/src/common -Isource/native/src/ipc -fsyntax-only source/native/src/plugins/engine_codes.cpp
+          for mode in '' '-DID6_EMULATOR'; do
+            ${{ matrix.cxx }} -std=gnu++98 -Wall -Wextra -Werror -DID6_ENTRY_PAGE=surface_codes '-DID6_PLUGIN_NAME="HostFaultSyntax"' $mode -Isource/fullscreen/native/src -Isource/fullscreen/native/generated -isystem source/fullscreen/native/sdk -Isource/fullscreen/native/telemetry/common -Isource/fullscreen/native/telemetry/ipc -Isource/native/src/common -fsyntax-only source/fullscreen/native/src/library.cpp
+          done
+      - name: Synthetic full-screen preview and resource contracts
+        run: |
+          python3 -m pip install Pillow==13.0.0
+          python3 -B source/tools/test_full_warm_resources.py
+          make -C source/native build/full-warm-surface.so CC=${{ matrix.cc }}
+          python3 -B source/tools/preview_full_faults.py --renderer source/native/build/full-warm-surface.so --models source/native/build/full-fault-models/raw.bin --out /tmp/full-fault-host-synthetic.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-fault-host-preview-${{ matrix.cc }}
+          path: /tmp/full-fault-host-synthetic.png
       - name: Static analysis
         if: matrix.cc == 'clang'
         run: |

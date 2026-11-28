@@ -28,7 +28,8 @@ settings, legacy preferences, resource generation and host validation limits.
 
 [Engine fault-code handling](docs/FAULT-CODES.md) describes supported status bits,
 the DDE/raw view, separate standard confirmed/pending/permanent emissions-code
-reads, description limitations and explicit clear confirmation. Standard OBD
+reads, description limitations and explicit clear confirmation in standard and
+full-screen views. Standard OBD
 codes are parsed from their own response format, never shortened BMW UDS codes.
 
 BoostDeck's [diesel rail display scale](docs/BOOST-DIESEL-SCALE.md) is selectable

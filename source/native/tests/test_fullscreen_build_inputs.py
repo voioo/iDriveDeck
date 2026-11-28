@@ -74,10 +74,10 @@ output.write_text('Host build-input fixture. Do not distribute or install.\\n')
                 else: self.assertTrue((self.screen/item).is_file(),item)
             self.assertNotIn(output,outputs);outputs.add(output)
 
-    def test_actual_emitted_boost_and_warm_inputs_link_with_host_fakes(self):
+    def test_actual_emitted_boost_warm_and_fault_inputs_link_with_host_fakes(self):
         result,commands=self.run_driver();self.assertEqual(result.returncode,0,result.stderr)
         objects={args[args.index('-o')+1]:args[args.index('-c')+1] for args in commands if '-c' in args}
-        for worker in ('boost_deck_worker.c','warm_deck_worker.c'):
+        for worker in ('boost_deck_worker.c','warm_deck_worker.c','engine_codes_worker.c'):
             matches=[args for args in commands if 'native/telemetry/workers/'+worker in args]
             self.assertEqual(len(matches),1)
             args=matches[0];output_index=args.index('-o');host_args=[]

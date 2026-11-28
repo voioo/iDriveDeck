@@ -8,6 +8,8 @@
 #include "boost_files.h"
 #include "boost_state.h"
 #include "boost_scale_label.h"
+#include "fault_state.h"
+#include "fault_view.h"
 #include "boost_settings_assets.h"
 #include "gauge_core.h"
 #include "warm_frame.h"
@@ -32,7 +34,7 @@ enum { boost = surface_boost, shift = surface_shift, mhd = surface_mhd, codes = 
        warm = surface_warm, home = surface_home,
        updates = surface_updates, systemPage = surface_system,
        updateConfirm = surface_update_confirm, installConfirm = surface_install_confirm, inactive = surface_hidden,
-       boostSettings, shiftSettings, codesConfirm, shiftGasSettings, poll_key = 0x4944364cu };
+       boostSettings, shiftSettings, codesConfirm, shiftGasSettings, codesSettings, poll_key = 0x4944364cu };
 enum { live_poll_ms = 16, menu_poll_ms = 40 };
 const unsigned kEntryPage = ID6_ENTRY_PAGE;
 enum { shift_target_count=ShiftPreferences::GASOLINE_TARGETS };
@@ -48,6 +50,7 @@ const char kBoostPrefs[] = ID6_BOOST_PREFS;
 const char kBoostLayout[] = ID6_BOOST_LAYOUT;
 const char kBoostDefaults[] = ID6_BOOST_DEFAULTS;
 const char kBoostRailScale[] = ID6_BOOST_RAIL_SCALE;
+const char kCodesPreferences[] = ID6_CODES_PREFS;
 const unsigned kAlertSignals[] = {BD_COOLANT, BD_OIL_TEMP, BD_OIL};
 const char* const kBoostCaptions[][2] = {
 #define SIGNAL(id, name, lo, hi, unit, wide, narrow) {wide,narrow},
@@ -115,9 +118,18 @@ class ID6LibraryLab : public bmw::PluginApp {
     LaunchRecords records_;
     bool surfaceFailed_;
     bool codesStarted_;
+    bool codesComplete_, codesSaved_, codesIncomplete_;
+    FullFaultPreferences codesPrefs_;
+    const char* codesPreferences_;
+    unsigned codesRequested_, codesResult_;
+    uint64_t codesConfirmedAt_;
+#ifdef ID6_EMULATOR
+    bool codesFile_;
+#endif
     unsigned codeSize_;
     unsigned codeOffset_;
-    char codeBuffer_[3072];
+    char codeBuffer_[4096];
+    char codeRows_[4][surface_text_size];
     unsigned controlFocus_, lamps_, map_, controlUsed_;
     int cooling_;
     char controlReply_[128];
@@ -608,6 +620,12 @@ class ID6LibraryLab : public bmw::PluginApp {
             surface_.sendState(state, bd_mono_ms());
             return;
         }
+        if (state.page==codes) {
+            state.launch_mode=codesResult_;
+            state.boost_style=codesPrefs_.raw ? 1 : 0;
+            for (unsigned i=0;i<4;++i)
+                snprintf(state.values[i],sizeof state.values[i],"%s",codeRows_[i]);
+        }
         if (!surfaceFailed_) {
             if (!surface_.open(kRoot) || !surface_.sendState(state, bd_mono_ms())) {
                 surfaceFailed_ = true;
@@ -725,6 +743,12 @@ class ID6LibraryLab : public bmw::PluginApp {
         if (exited == child_ || (exited < 0 && errno == ECHILD)) child_ = -1;
     }
     void stopWorker() {
+        if (socket_>=0 && workerPage_==codes && !codesComplete_) {
+            codesStarted_=true; // Returning from a menu does not repeat a cancelled read.
+            codeSize_=codeOffset_=0;
+            codeBuffer_[0]=0;
+            memset(codeRows_,0,sizeof codeRows_);
+        }
         if (socket_ >= 0) { close(socket_); socket_ = -1; }
         reap();
         if (child_ > 0 && !childStopping_) {
@@ -982,6 +1006,54 @@ class ID6LibraryLab : public bmw::PluginApp {
         resetLaunch();
         return true;
     }
+    void loadCodesConfiguration() {
+        const char* path=codesPreferences_;
+#ifndef ID6_EMULATOR
+        if (!strcmp(path,kCodesPreferences) && access(path,F_OK)!=0 && errno==ENOENT)
+            path="/var/opt/hmi/data/ID5/EngineCodes.prefs";
+#endif
+        codesPrefs_=FullFaultPreferences();
+        codesPrefs_.load(path);
+        refreshCodesSettings();
+    }
+    void refreshCodesSettings() {
+        updateModel(1860u,bmw::BasicString<char>(codesPrefs_.raw ?
+                    "Display: DDE / raw BMW codes" : "Display: gasoline reference descriptions"));
+        updateModel(1861u,bmw::BasicString<char>(codesSaved_ ?
+                    "Profile changes only the display; use a read action to refresh" :
+                    "Could not save fault display settings"));
+    }
+    template<bool Raw> bool setCodesProfile(const bmw::Parcel&) {
+        if (page_!=codes && page_!=codesSettings) return true;
+        FullFaultPreferences next=codesPrefs_;next.raw=Raw;
+        codesSaved_=next.save(codesPreferences_);
+        if (codesSaved_) codesPrefs_=next;
+        codesClearPending_=false;
+        refreshCodesSettings();
+        if (codesComplete_) showCodes();
+        syncSurface();return true;
+    }
+    void clearCodeResult() {
+        codesIncomplete_=false;
+        codeSize_=codeOffset_=0;
+        codeBuffer_[0]=0;
+        memset(codeRows_,0,sizeof codeRows_);
+        for (unsigned i=0;i<4;++i) {
+            last_[i][0]=0;
+            updateModel(1400u+codes*20u+i,bmw::BasicString<char>(""));
+            updateModel(1870u+i,bmw::BasicString<char>(""));
+        }
+    }
+    template<unsigned Service> bool readCodes(const bmw::Parcel&) {
+        if (page_!=codes && page_!=codesSettings) return true;
+        stopWorker();
+        codesRequested_=Service;
+        codesClearPending_=false;
+        codesStarted_=codesComplete_=false;
+        clearCodeResult();
+        status(codes,"Waiting for previous diagnostics to finish");
+        syncSurface();schedule();return true;
+    }
     void showCodes() {
         const char* row = strchr(codeBuffer_, '\n');
         if (row) ++row;
@@ -999,23 +1071,35 @@ class ID6LibraryLab : public bmw::PluginApp {
             size_t size = row ? strcspn(row,"\r\n") : 0;
             if (size >= sizeof line) size = sizeof line - 1;
             snprintf(line,sizeof line,"%.*s",int(size),row ? row : "");
-            display(codes,i,line);
+            snprintf(codeRows_[i],sizeof codeRows_[i],"%s",line);
+            char title[96],detail[192];
+            full_fault_row(line,codesResult_,codesPrefs_.raw ? 1u : 0u,title,sizeof title,detail,sizeof detail);
+            display(codes,i,title);
+            updateModel(1870u+i,bmw::BasicString<char>(detail));
             if (row) { row = strchr(row,'\n'); if (row) ++row; }
         }
         int length = int(strcspn(codeBuffer_,"\r\n"));
         char heading[96];
-        snprintf(heading,sizeof heading,"%.*s",length,codeBuffer_);
+        snprintf(heading,sizeof heading,"%s%s%sLast read: %.*s",codesSaved_ ? "" : "Settings not saved | ",
+                 codesIncomplete_ ? "Incomplete output | " : "",
+                 codesResult_ ? "" : codesPrefs_.raw ? "DDE/raw | " : "Gas reference | ",
+                 length,codeBuffer_);
         status(codes,heading[0] ? heading : "No diagnostic result");
     }
     void startCodes(bool clear) {
         codesStarted_ = true;
-        codeSize_ = codeOffset_ = 0;
-        codeBuffer_[0] = 0;
+        codesComplete_=false;
+        codesResult_=clear ? 0u : codesRequested_;
+        clearCodeResult();
 #ifdef ID6_EMULATOR
-        snprintf(codeBuffer_,sizeof codeBuffer_,"%s",clear ?
-                 "IDEmu: Confirmed clear in the test fixture\n" :
-                 "IDEmu: 3 sample engine codes\n100213  status 01\n120308  status 04\nFFFFFF  status 08\n");
+        const char* fixture=clear ? "IDEmu synthetic confirmed-clear result\n" :
+            !codesResult_ ? "IDEmu synthetic BMW codes\n100213  status 01 mask FF\n120308  status 04 mask FF\nFFFFFF  status 09 mask 08\n" :
+            codesResult_==3 ? "IDEmu synthetic OBD Confirmed codes\nOBD03 P0133\n" :
+            codesResult_==7 ? "IDEmu synthetic OBD Pending codes\nOBD07 P0101\n" :
+            "IDEmu synthetic OBD Permanent codes\nOBD0A U1016\n";
+        snprintf(codeBuffer_,sizeof codeBuffer_,"%s",fixture);
         codeSize_=strlen(codeBuffer_);
+        codesComplete_=true;
         showCodes();
 #else
         int channel[2];
@@ -1025,7 +1109,11 @@ class ID6LibraryLab : public bmw::PluginApp {
         snprintf(gatewayPath,sizeof gatewayPath,"%s/gateway-ip.txt",kRoot);
         if (!readDiagnosticGateway(gatewayPath,gateway))
             readDiagnosticGateway(ID6_GATEWAY_SETTINGS,gateway);
-        const char *args[] = {path,"--host",gateway,clear ? "--clear" : "--codes",0};
+        const char* mode=codesResult_==3 ? "--obd-confirmed" : codesResult_==7 ? "--obd-pending" :
+                         codesResult_==10 ? "--obd-permanent" : clear ? "--clear" : "--codes";
+        const char *args[] = {path,"--host",gateway,mode,
+                             !codesResult_ ? (clear ? "--confirm-clear" : "--status-mask") : 0,
+                             clear ? "--status-mask" : 0,0};
         if (fcntl(channel[0],F_SETFL,O_NONBLOCK) == 0 &&
             fcntl(channel[0],F_SETFD,FD_CLOEXEC) == 0 &&
             fcntl(channel[1],F_SETFD,FD_CLOEXEC) == 0)
@@ -1039,38 +1127,72 @@ class ID6LibraryLab : public bmw::PluginApp {
         socket_ = channel[0];
         workerPage_ = codes;
         childStopping_ = false;
-        status(codes,clear ? "Clearing engine fault memory" : "Reading engine fault memory");
+        status(codes,clear ? "Clearing BMW fault memory" : codesResult_ ?
+               "Reading selected OBD emissions category" : "Reading BMW fault memory");
 #endif
+    }
+    void finishCodes(bool truncated) {
+        close(socket_);socket_=-1;
+        const bool partial=codeSize_ && codeBuffer_[codeSize_-1]!='\n';
+        if (partial) {
+            char* end=strrchr(codeBuffer_,'\n');
+            codeSize_=end ? unsigned(end-codeBuffer_+1) : 0;
+            codeBuffer_[codeSize_]=0;
+        }
+        if (!codeSize_) {
+            snprintf(codeBuffer_,sizeof codeBuffer_,"No complete diagnostic result\n");
+            codeSize_=strlen(codeBuffer_);
+        }
+        if (partial || truncated) {
+            snprintf(codeBuffer_+codeSize_,sizeof codeBuffer_-codeSize_,"Incomplete diagnostic output\n");
+            codeSize_=strlen(codeBuffer_);
+        }
+        codesIncomplete_=partial || truncated;
+        codesComplete_=true;
+        showCodes();
     }
     void pollCodes() {
         if (!codesStarted_ && child_ < 0) {
             const bool clear=codesClearPending_;
             codesClearPending_=false;
+            const uint64_t now=bd_mono_ms();
+            if (clear && (!codesConfirmedAt_ || now<codesConfirmedAt_ || now-codesConfirmedAt_>5000)) {
+                codesStarted_=true;
+                status(codes,"Clear confirmation expired; no command sent");return;
+            }
             startCodes(clear);
         }
         if (socket_ < 0 || workerPage_ != codes) return;
-        if (codeSize_ < sizeof codeBuffer_ - 1) {
-            ssize_t count = read(socket_,codeBuffer_+codeSize_,sizeof codeBuffer_-codeSize_-1);
-            if (count > 0) {
-                codeSize_ += unsigned(count);
-                codeBuffer_[codeSize_] = 0;
-                return;
+        const unsigned limit=sizeof codeBuffer_-96;
+        char overflow;
+        ssize_t count=codeSize_<limit ? read(socket_,codeBuffer_+codeSize_,limit-codeSize_) :
+                                      read(socket_,&overflow,1);
+        if (count>0) {
+            if (codeSize_==limit) { finishCodes(true);return; }
+            /* Worker output is text. An embedded NUL must not hide trailing bytes. */
+            if (memchr(codeBuffer_+codeSize_,0,size_t(count))) {
+                codeBuffer_[codeSize_]=0;finishCodes(true);return;
             }
-            if (count < 0 && (errno == EINTR || errno == EAGAIN)) return;
+            codeSize_+=unsigned(count);codeBuffer_[codeSize_]=0;return;
         }
-        close(socket_);
-        socket_ = -1;
-        showCodes();
+        if (count<0 && (errno==EINTR || errno==EAGAIN)) return;
+        finishCodes(count<0);
     }
     bool nextCodes(const bmw::Parcel&) {
-        if (page_ == codes && socket_ < 0 && codeSize_) {
+        if (page_ == codes && codesComplete_ && codeSize_) {
             codeOffset_ += 4;
             showCodes();
         }
         return true;
     }
     bool confirmClearCodes(const bmw::Parcel&) {
-        if (page_==codesConfirm) codesClearPending_=true;
+        if (page_==codesConfirm) {
+            codesConfirmedAt_=bd_mono_ms();
+            codesClearPending_=true;
+            codesStarted_=codesComplete_=false;
+            codesRequested_=0;
+            clearCodeResult();
+        }
         return true;
     }
     template <unsigned Page> bool preview(const bmw::Parcel& payload) {
@@ -1098,6 +1220,8 @@ class ID6LibraryLab : public bmw::PluginApp {
             stopWorker();
             page_ = Page;
             if (Page==boostSettings) refreshBoostSettings();
+            if (Page==codesSettings) refreshCodesSettings();
+            if (Page!=codes && Page!=codesConfirm) codesClearPending_=false;
             if (Page==boostSettings || Page==warm)
                 updateModel(1880u,bmw::BasicString<char>(dctTemperatureLabel()));
             if (Page==warm) {
@@ -1110,7 +1234,7 @@ class ID6LibraryLab : public bmw::PluginApp {
                 case shift: controlFocus_ = 216; break;
                 case mhd: controlFocus_ = 240; break;
                 case beamer: controlFocus_ = 250; break;
-                case codes: controlFocus_ = 230; break;
+                case codes: controlFocus_ = 5890; break;
                 case codesConfirm: controlFocus_ = 236; break;
                 case launchPage: controlFocus_ = 231; break;
                 case updates: controlFocus_ = systemPage; break;
@@ -1124,7 +1248,6 @@ class ID6LibraryLab : public bmw::PluginApp {
                 roadMode_ = ROAD_JET_WAITING;
                 roadHasScene_ = false;
             }
-            if (Page == codes) codesStarted_ = false;
             surfaceFailed_ = false;
             telemetryFailed_ = false;
             lastPacket_ = 0;
@@ -1144,11 +1267,11 @@ class ID6LibraryLab : public bmw::PluginApp {
                             Page == updates && usbReply_[0] ? usbReply_ : "");
             }
             else if (Page == codes) {
-                for (unsigned i=0; i<4; ++i) {
-                    memset(last_[i],0,sizeof last_[i]);
-                    updateModel(1400u+20u*codes+i,bmw::BasicString<char>(""));
+                if (codesComplete_) showCodes();
+                else {
+                    clearCodeResult();
+                    status(codes,codesStarted_ ? "Select a read action to refresh" : "Waiting for diagnostics");
                 }
-                status(codes,"Waiting for diagnostics");
             }
 
             syncSurface();
@@ -1323,7 +1446,8 @@ public:
                   const bmw::Bundle& cfg, const bmw::Bundle& res,
                   const char* shift_preferences=kShiftPreferences,const char* shift_profile=kShiftProfile,
                   const char* boost_preferences=kBoostPrefs,const char* boost_assignments=kBoostLayout,
-                  const char* boost_defaults=kBoostDefaults,const char* boost_rail_scale=kBoostRailScale)
+                  const char* boost_defaults=kBoostDefaults,const char* boost_rail_scale=kBoostRailScale,
+                  const char* codes_preferences=kCodesPreferences)
         : bmw::PluginApp(dispatcher, name, major, minor, version, cfg, res),
           page_(inactive), workerPage_(inactive), socket_(-1), child_(-1),
           queued_(false), childStopping_(false), received_(false), telemetryFailed_(false), lastPacket_(0),
@@ -1335,10 +1459,17 @@ public:
 #endif
           boostSlot_(9), tone_(-1), lastTone_(0),
           shiftPreferences_(shift_preferences), shiftProfile_(shift_profile), shiftSaved_(true), warmFahrenheit_(false), launchMode_(LT_0_100), surfaceFailed_(false), codesStarted_(false),
+          codesComplete_(false),codesSaved_(true),codesIncomplete_(false),codesPreferences_(codes_preferences),
+          codesRequested_(0),codesResult_(0),codesConfirmedAt_(0),
+#ifdef ID6_EMULATOR
+          codesFile_(false),
+#endif
           codeSize_(0), codeOffset_(0), controlFocus_(0), lamps_(0), map_(0),
           controlUsed_(0), cooling_(-1), usbChild_(-1), usbRead_(-1), usbUsed_(0), roadSample_(0), roadMode_(ROAD_JET_WAITING),
           roadDistance_(0), roadLane_(2), roadAltitude_(0), roadHasScene_(false), codesClearPending_(false) {
         memset(last_,0,sizeof last_);
+        codeBuffer_[0]=0;
+        memset(codeRows_,0,sizeof codeRows_);
         surfaceStatus_[0]=0;
         usbReply_[0] = 0;
         memset(boostLevels_,0,sizeof boostLevels_);
@@ -1393,8 +1524,12 @@ public:
             registerControl<launchPage,231,&ID6LibraryLab::nextLaunchMode>();
         }
         if (kEntryPage == codes) {
+            loadCodesConfiguration();
             registerControl<codes,230,&ID6LibraryLab::nextCodes>();
             registerSelection<codes,232>();
+            registerSelection<codes,5890>();
+            registerPage<codesSettings>(2200);
+            registerSelection<codes,2200>();
             registerPage<codesConfirm>(217);
             registerSelection<codesConfirm,234>();
             registerSelection<codesConfirm,236>();
@@ -1403,6 +1538,12 @@ public:
             action.m_obj=this;
             action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::confirmClearCodes>;
             addHandler(234u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setCodesProfile<false> >;addHandler(5880u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::setCodesProfile<true> >;addHandler(5881u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::readCodes<0> >;addHandler(5890u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::readCodes<3> >;addHandler(5893u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::readCodes<7> >;addHandler(5897u,action);
+            action.m_exec=&Action::execImpl<ID6LibraryLab,&ID6LibraryLab::readCodes<10> >;addHandler(5900u,action);
         }
         if (kEntryPage == mhd) {
             registerControl<mhd,240,&ID6LibraryLab::mhdAction<240> >();
@@ -1424,7 +1565,7 @@ public:
         }
         return true;
     }
-    virtual bool onFinalize() { page_=inactive; syncSurface(); surface_.closeChannel(); stopWorker(); return true; }
+    virtual bool onFinalize() { codesClearPending_=false;page_=inactive; syncSurface(); surface_.closeChannel(); stopWorker(); return true; }
     virtual bool invokeDataUpdate(unsigned key, const bmw::Parcel& data) {
         if (key != poll_key) return bmw::PluginApp::invokeDataUpdate(key, data);
         queued_ = false;
@@ -1432,6 +1573,10 @@ public:
         pollUsb();
         reapTone();
 #ifdef ID6_EMULATOR
+        if (kEntryPage==codes && !codesFile_ && access(codesPreferences_,F_OK)==0) {
+            codesFile_=true;loadCodesConfiguration();
+            if (codesComplete_) showCodes();
+        }
         if (kEntryPage == boost && boostFiles_ != 15) {
             const unsigned found=(access(boostPreferences_,F_OK)==0 ? 1u : 0u) |
                                  (access(boostAssignments_,F_OK)==0 ? 2u : 0u) |

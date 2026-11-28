@@ -127,28 +127,48 @@ for i, item in enumerate(catalog):
         surface_button(actions, components, id=521, text='Change mode', action=231, position=(810,348,395,52))
         geometry(element(components, 'label', id=522, model=615), (435, 348, 365, 52))
     if item['id'] == 'EngineCodes':
+        element(actions, 'raAction', id=5890)
+        surface_button(actions, components, id=530, text='Read BMW codes', action=5890, position=(48,348,380,58))
+        element(actions, 'hmiAction', id=2200, target=2200)
+        element(element(detail,'optionComponents'),'button',id=531,text='Fault display and emissions reads',action=2200)
+        settings=element(element(states,'hmiState',id=2200,parentId=target,text='Fault display and reads'),'components')
+        for model in (1860,1861):
+            element(models,'raDataModel',id=model,modelType='Richtext')
+            element(settings,'label',id=model,model=model)
+        for label,callback in (('Gasoline reference descriptions',5880),('DDE / raw BMW codes',5881),
+                               ('Read confirmed emissions codes',5893),('Read pending emissions codes',5897),
+                               ('Read permanent emissions codes',5900)):
+            combined=element(element(actions,'combinedAction',id=callback+10000,sync='true'),'actions')
+            element(combined,'raAction',id=callback)
+            element(combined,'hmiAction',id=callback+20000,target=target)
+            element(settings,'button',id=callback,text=label,action=callback+10000)
         element(actions, 'raAction', id=230)
         surface_button(actions, components, id=520, text='Next codes', action=230, position=(660,348,260,58))
         element(actions, 'hmiAction', id=232, target=217)
         surface_button(actions, components, id=523, text='Clear codes', action=232, position=(968,348,260,58))
-        confirm = element(states, 'hmiState', id=217, parentId=target, text='Clear engine codes')
+        confirm = element(states, 'hmiState', id=217, parentId=target, text='Clear BMW fault memory')
         controls = element(confirm, 'components')
         geometry(element(controls, 'label', id=524, text='Erases stored codes and freeze-frame data.'),
                  (52,75,1100,60))
         geometry(element(controls, 'label', id=525, text='Park with ignition on and engine off.'),
                  (52,145,1100,60))
+        geometry(element(controls,'label',id=528,text='Permanent emissions codes are ECU-controlled.'),
+                 (52,205,1100,40))
         clear = element(element(actions, 'combinedAction', id=233, sync='true'), 'actions')
         element(clear, 'raAction', id=234)
         element(clear, 'hmiAction', id=235, target=target)
         element(actions, 'hmiAction', id=236, target=target)
-        surface_button(actions, controls, id=527, text='Cancel', action=236, position=(145,253,340,70))
+        surface_button(actions, controls, id=527, text='Cancel', action=236, position=(144,278,340,56))
         surface_button(actions, controls, id=526, text='Confirm clear engine codes', action=233,
-                       selection=234, position=(650,253,440,70))
+                       selection=234, position=(650,278,440,56))
         for row in range(4):
             model = 1400 + 20 * i + row
             element(models, 'raDataModel', id=model, modelType='Richtext')
             geometry(element(components, 'label', id=1020 + 40*i + row, model=model),
-                     (28, 42 + row * 45, 740, 36))
+                     (28, 42 + row * 70, 1160, 32))
+            element(models,'raDataModel',id=1870+row,modelType='Richtext')
+            geometry(element(components,'label',id=1870+row,model=1870+row),
+                     (28,74+row*70,1160,32))
     live = {
         'BoostDeck': tuple('Gauge ' + str(i+1) for i in range(9)),
         'ShiftDeck': ('Road speed', 'Engine RPM'),
@@ -319,6 +339,7 @@ with (output / 'modules.txt').open('w') as modules:
             selected.update((216,219))
         if item['id'] == 'EngineCodes':
             selected.add(217)
+            selected.add(2200)
         modules.write(f'{name} surface_{page_names[i]}\n')
         write_individual(name, item['name'], connector, 245 + i, entry, selected)
 

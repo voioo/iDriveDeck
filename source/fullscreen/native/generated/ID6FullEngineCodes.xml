@@ -8,6 +8,39 @@
     </entryButton>
     <actions>
       <hmiAction id="10" target="203" />
+      <raAction id="5890" />
+      <raAction id="11890" />
+      <hmiAction id="2200" target="2200" />
+      <combinedAction id="15880" sync="true">
+        <actions>
+          <raAction id="5880" />
+          <hmiAction id="25880" target="203" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15881" sync="true">
+        <actions>
+          <raAction id="5881" />
+          <hmiAction id="25881" target="203" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15893" sync="true">
+        <actions>
+          <raAction id="5893" />
+          <hmiAction id="25893" target="203" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15897" sync="true">
+        <actions>
+          <raAction id="5897" />
+          <hmiAction id="25897" target="203" />
+        </actions>
+      </combinedAction>
+      <combinedAction id="15900" sync="true">
+        <actions>
+          <raAction id="5900" />
+          <hmiAction id="25900" target="203" />
+        </actions>
+      </combinedAction>
       <raAction id="230" />
       <raAction id="6230" />
       <hmiAction id="232" target="217" />
@@ -23,15 +56,29 @@
       <raAction id="6234" />
     </actions>
     <models>
+      <raDataModel id="1860" modelType="Richtext" />
+      <raDataModel id="1861" modelType="Richtext" />
       <raDataModel id="1460" modelType="Richtext" />
+      <raDataModel id="1870" modelType="Richtext" />
       <raDataModel id="1461" modelType="Richtext" />
+      <raDataModel id="1871" modelType="Richtext" />
       <raDataModel id="1462" modelType="Richtext" />
+      <raDataModel id="1872" modelType="Richtext" />
       <raDataModel id="1463" modelType="Richtext" />
+      <raDataModel id="1873" modelType="Richtext" />
       <raDataModel id="603" modelType="Richtext" />
     </models>
     <hmiStates>
       <hmiState id="203" text="Engine Fault Codes">
         <components>
+          <button id="530" text="Read BMW codes" action="5890" selectAction="11890">
+            <properties>
+              <property id="20" value="48" />
+              <property id="21" value="348" />
+              <property id="9" value="380" />
+              <property id="10" value="58" />
+            </properties>
+          </button>
           <button id="520" text="Next codes" action="230" selectAction="6230">
             <properties>
               <property id="20" value="660" />
@@ -52,32 +99,64 @@
             <properties>
               <property id="20" value="28" />
               <property id="21" value="42" />
-              <property id="9" value="740" />
-              <property id="10" value="36" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
+            </properties>
+          </label>
+          <label id="1870" model="1870">
+            <properties>
+              <property id="20" value="28" />
+              <property id="21" value="74" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
             </properties>
           </label>
           <label id="1141" model="1461">
             <properties>
               <property id="20" value="28" />
-              <property id="21" value="87" />
-              <property id="9" value="740" />
-              <property id="10" value="36" />
+              <property id="21" value="112" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
+            </properties>
+          </label>
+          <label id="1871" model="1871">
+            <properties>
+              <property id="20" value="28" />
+              <property id="21" value="144" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
             </properties>
           </label>
           <label id="1142" model="1462">
             <properties>
               <property id="20" value="28" />
-              <property id="21" value="132" />
-              <property id="9" value="740" />
-              <property id="10" value="36" />
+              <property id="21" value="182" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
+            </properties>
+          </label>
+          <label id="1872" model="1872">
+            <properties>
+              <property id="20" value="28" />
+              <property id="21" value="214" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
             </properties>
           </label>
           <label id="1143" model="1463">
             <properties>
               <property id="20" value="28" />
-              <property id="21" value="177" />
-              <property id="9" value="740" />
-              <property id="10" value="36" />
+              <property id="21" value="252" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
+            </properties>
+          </label>
+          <label id="1873" model="1873">
+            <properties>
+              <property id="20" value="28" />
+              <property id="21" value="284" />
+              <property id="9" value="1160" />
+              <property id="10" value="32" />
             </properties>
           </label>
           <label id="463" model="603">
@@ -89,8 +168,22 @@
             </properties>
           </label>
         </components>
+        <optionComponents>
+          <button id="531" text="Fault display and emissions reads" action="2200" />
+        </optionComponents>
       </hmiState>
-      <hmiState id="217" parentId="203" text="Clear engine codes">
+      <hmiState id="2200" parentId="203" text="Fault display and reads">
+        <components>
+          <label id="1860" model="1860" />
+          <label id="1861" model="1861" />
+          <button id="5880" text="Gasoline reference descriptions" action="15880" />
+          <button id="5881" text="DDE / raw BMW codes" action="15881" />
+          <button id="5893" text="Read confirmed emissions codes" action="15893" />
+          <button id="5897" text="Read pending emissions codes" action="15897" />
+          <button id="5900" text="Read permanent emissions codes" action="15900" />
+        </components>
+      </hmiState>
+      <hmiState id="217" parentId="203" text="Clear BMW fault memory">
         <components>
           <label id="524" text="Erases stored codes and freeze-frame data.">
             <properties>
@@ -108,20 +201,28 @@
               <property id="10" value="60" />
             </properties>
           </label>
+          <label id="528" text="Permanent emissions codes are ECU-controlled.">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="205" />
+              <property id="9" value="1100" />
+              <property id="10" value="40" />
+            </properties>
+          </label>
           <button id="527" text="Cancel" action="236" selectAction="6236">
             <properties>
-              <property id="20" value="145" />
-              <property id="21" value="253" />
+              <property id="20" value="144" />
+              <property id="21" value="278" />
               <property id="9" value="340" />
-              <property id="10" value="70" />
+              <property id="10" value="56" />
             </properties>
           </button>
           <button id="526" text="Confirm clear engine codes" action="233" selectAction="6234">
             <properties>
               <property id="20" value="650" />
-              <property id="21" value="253" />
+              <property id="21" value="278" />
               <property id="9" value="440" />
-              <property id="10" value="70" />
+              <property id="10" value="56" />
             </properties>
           </button>
         </components>

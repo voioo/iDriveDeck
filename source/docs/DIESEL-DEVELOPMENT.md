@@ -1,71 +1,188 @@
 # Diesel compatibility investigation
 
-Full-screen DPF checkpoint, 28 November: the isolated fork branch
-`diesel/fullscreen-dpfdeck` adds the shared monitoring worker and decoder, six
-bank-selected readings, optional regeneration status, private D1/D2 settings,
-native fallback and explicitly synthetic emulator/preview data. Connector 243
-preserves dashboard and companion IDs; DPFDeck is an explicit optional full-screen
-installer choice. Four native programs, 27 actual full-worker transport/coexistence
-cases and three resource cases pass. The full-screen MOST copy lacked the DPF
-ownership marker: two actual transport regressions failed before adding the
-standard mapping, and the complete rerun passes. The renderer uses the
-canonical five measurement states and explicit
-unavailable soot/ash/history/request/inhibition fields.
+Contribution workflow correction, 28 November: the owner clarified that draft
+development reviews belong on the fork, with upstream PRs opened only when ready
+for review. This supersedes the earlier objective's draft-upstream guidance.
+Seven fork drafts are now the working review locations:
 
-All 175 tool/resource cases and 37 top-level installer cases pass, including
-five-panel staging, payload/connector gates, replacement, uninstall and rollback
-with both preference files preserved. Four full-screen programs and four
-focused worker cases pass ASan/UBSan. GCC/Clang physical/emulator syntax, guest C,
-shell syntax and zero-diagnostic Library analysis pass. Synthetic C renders were
-inspected. The complete host evidence spans 51 native test programs and 253
-Python cases across the focused and existing-native runs. The 175 tool/resource
-cases overlap nine of those, giving 419 distinct Python cases. The already
-passed full DPF target was skipped in the existing-native run. Ninety gasoline
-renders match signed `4683ea6` across five panels, two styles and nine colors.
-Surface v7 requires a fresh complete matching bundle. No QNX or physical result
-is claimed. The earlier combined `60a5690` now passes all eleven source workflows.
+| Feature | Fork review | Earlier upstream draft |
+| --- | --- | --- |
+| Discovery | [#2](https://github.com/voioo/iDriveDeck/pull/2) | [#201](https://github.com/inotbarnacle/iDriveDeck/pull/201) |
+| WarmDeck | [#3](https://github.com/voioo/iDriveDeck/pull/3) | [#209](https://github.com/inotbarnacle/iDriveDeck/pull/209) |
+| ShiftDeck | [#4](https://github.com/voioo/iDriveDeck/pull/4), based on WarmDeck | [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) |
+| Telemetry | [#5](https://github.com/voioo/iDriveDeck/pull/5), based on ShiftDeck | [#202](https://github.com/inotbarnacle/iDriveDeck/pull/202) |
+| Rail display scale | [#6](https://github.com/voioo/iDriveDeck/pull/6) | [#205](https://github.com/inotbarnacle/iDriveDeck/pull/205) |
+| Fault handling | [#7](https://github.com/voioo/iDriveDeck/pull/7) | [#204](https://github.com/inotbarnacle/iDriveDeck/pull/204) |
+| DPFDeck | [#8](https://github.com/voioo/iDriveDeck/pull/8) | [#216](https://github.com/inotbarnacle/iDriveDeck/pull/216) |
 
-Combined checkpoint, 28 November: `f61d611` plus the signed full-screen fault
-follow-up `4683ea6` passes 47 native test programs and 223 Python cases through
-Make, including six resource cases. All 172 tool/resource cases also pass;
-counting the six shared cases once gives 389 distinct Python cases. The tested
-native subtree is `7b36c3e0`; the complete full-screen subtree `98a09733` matches
-the dedicated fault branch exactly. That branch passes [all nine source
-workflows](https://github.com/voioo/iDriveDeck/actions/runs/46136634967). This
-combined merge still needs its own published-source CI. Work remains on the
-fork, with no change to existing upstream draft heads. Full-screen DPF remains
-the next app port; QNX, exact ECU/signal evidence and separately approved parked
-validation remain outstanding. Earlier counts below describe their own source
-checkpoints.
+Existing fork #1 (worker-ownership regressions) is preserved. All seven new
+reviews are confirmed open drafts and link the original discussion. Following
+the owner's repeated clarification of the intended fork-first workflow, all
+seven original upstream drafts were closed on 28 November at 11:43 UTC. Each
+upstream description links its matching fork review and preserves the original
+notes. Branches, discussions and volunteer instructions remain available. Future
+work stays on the fork; upstream PRs are opened only when ready for review.
+Descriptions and comments must remain human friendly.
 
-Full-screen fault checkpoint, 28 November: this branch implements the masked
-BMW/DDE-raw display, separate OBD emissions read categories, completed snapshots,
-worker retirement, explicit expiring clear confirmation and private E1 settings
-in the full-screen app and native fallback. The canonical worker and C/C++ text
-parser are shared. Surface v6 requires a complete matching bundle. Focused
-production callbacks, emulator and five-panel C rendering pass, along with the
-worker transport oracles, menu contracts and four GCC/Clang syntax variants.
-Library static analysis reports no diagnostics. The full host run passes 43
-native programs and 196 Python cases (including six resource cases). The 16
-focused resource cases include those six, giving 206 distinct Python cases
-across the two runs. Eight fault programs and ten full-screen worker transport
-cases also pass ASan/UBSan. The actual C renderer's labeled synthetic raw/OBD
-previews were inspected. No QNX or vehicle result is claimed.
+Current status, 28 November at 11:49 UTC: both remote `main` branches point to
+`9ded391`. The latest complete source candidate is signed `e86c174` on the fork's
+`diesel/fullscreen-dpfdeck` branch. Local verification passes 51 native programs,
+419 distinct Python cases and 37 top-level installer cases, including focused
+sanitizers and 90 unchanged gasoline render comparisons. All eleven exact-head
+source workflows pass, including the DPF GCC/Clang, memory, installer and
+preview jobs. The DPF workflow publishes the labelled synthetic preview artifact.
+The source includes standard and full-screen BoostDeck, WarmDeck, ShiftDeck,
+fault handling and DPFDeck improvements, plus the discovery tools. This remains
+host-tested source, not an install-ready or physically validated X5 release.
+The exact DDE/EGS, firmware/hash/display/transport evidence, licensed QNX build,
+and authorized parked validation remain outstanding. The seven upstream drafts
+are now closed; historical entries below describing them as open or awaiting a
+cleanup choice record the earlier state only.
 
-Work in progress belongs on the fork; upstream PRs should be ready for review.
-The current fault review is [fork #7](https://github.com/voioo/iDriveDeck/pull/7).
-This follow-up stays on `diesel/fullscreen-fault-status` so the original upstream
-draft #204 and its shared head remain unchanged pending the owner's cleanup
-choice. Earlier entries below record historical checkpoints, not current CI.
+Workflow audit, 28 November at 10:22 UTC: all seven fork drafts above are open
+and preserve the exact heads of their original upstream drafts. Both remote
+`main` branches still point to `9ded391`; repository synchronization is current.
+The existing upstream drafts remain open pending the owner's cleanup choice;
+the fork copies did not automatically close or relocate them. No upstream PR
+was created, promoted, closed or updated during this audit. The current combined
+`f61d611` source still passes all eleven workflows. These are host results;
+there is no installable, target-validated N57 release yet. The remaining native
+review gates include the applicable QNX/ABI and parked checks, plus completing
+the scoped feature work. Documentation and host tools should be assessed against
+their own scope rather than requiring an unrelated vehicle installation.
 
-Workflow update, 28 November: the owner clarified that draft development reviews
-belong on the fork. Upstream PRs are opened only when ready for review. This
-supersedes earlier draft-upstream wording below. Fork #2–#8 now hold the working
-reviews, with rail work tracked at [fork #6](https://github.com/voioo/iDriveDeck/pull/6).
-Existing upstream drafts await the owner's cleanup choice; their discussions
-must be preserved. No further WIP may be published to their shared head branches
-while that choice is pending. The full-screen rail follow-up is being tested in
-an isolated branch; no physical vehicle or QNX validation is claimed.
+Full-screen rail work is isolated in `bmw-idrive-full-scale`, branch
+`diesel/fullscreen-rail-scale`, on signed base `9c34e0d`. The local implementation
+now includes the four ranges, unit-aware captions, own R1 persistence and
+emulator bridge. Surface v5 retains 496 bytes and uses fields untouched by tach
+animation. Production callbacks, C drawing/animation on five panels, focused
+Boost/Warm/Shift ASan/UBSan, four compiler syntax variants, zero-diagnostic
+Library analysis and 53 tool/resource cases pass. Ninety gasoline renders match
+`e5ffcf2` exactly. A labeled synthetic preview shows 1,000 bar on the half-full
+2,000-bar scale. The complete suite passes 35 native programs and 166 native-suite
+Python cases; adding the 53 tool/resource cases gives 219 distinct Python cases.
+Signed `9c37fd4` is published only on the isolated fork branch, with [all eight source
+workflows](https://github.com/voioo/iDriveDeck/actions/runs/46132404910) passing.
+Fork #6 links the follow-up comparison while retaining its standard-view head.
+Upstream #205's head remains `aabdc8c`, verified after publication. No shared
+upstream draft head may receive further WIP while the cleanup choice is pending.
+Earlier signed combined `f61d611` is published with 43 native programs, 207 native-suite
+Python cases and 170 tool/resource cases passing locally: 377 distinct Python
+cases. Four fault-resource cases run from Make and are counted once. Its native
+and full-screen native subtrees are `c83d7380` and `fe027fa3`. All [eleven source
+workflows](https://github.com/voioo/iDriveDeck/actions/runs/46133370660) pass;
+`2a8dd24` remains the earlier checkpoint.
+
+The full-screen fault port is signed and published at `4683ea6` on the isolated
+`diesel/fullscreen-fault-status` fork branch. It shares the strict C/C++ parser
+and canonical worker, preserves availability masks, separates BMW and OBD
+categories, caches completed read snapshots and cancels interrupted reads
+without automatic repeats. The consumer waits for old-worker cleanup, bounds
+large/partial output and uses an expiring explicit clear confirmation. Its E1
+profile, native fallback, C renderer and emulator agree; surface v6 requires a
+complete matching bundle. All 43 native programs and 196 Make Python cases pass.
+Six resource cases overlap the 16 focused resource checks, yielding 206 distinct
+Python cases across both runs. Eight fault programs plus ten full-screen worker
+transport cases pass ASan/UBSan. Four compiler syntax variants and the guest C
+check pass; Library analysis has no diagnostics. Raw and permanent-OBD synthetic
+previews were inspected. [All nine source workflows](https://github.com/voioo/iDriveDeck/actions/runs/46136634967)
+pass; no licensed descriptions, QNX build or physical result is claimed. Fork #7
+now links the isolated follow-up and passing evidence while retaining its head.
+Upstream #204 remains unchanged. Signed/verified combined `60a5690` integrates
+the follow-up into `f61d611` and is published only on the fork integration branch.
+All 47 native programs, 223 Make Python cases and 172 tool/resource cases pass
+locally: 389 distinct Python cases after counting six shared resource cases once.
+The native subtree is `7b36c3e0`; its full-screen subtree `98a09733` exactly
+matches the dedicated fault branch. All eleven of its source workflows pass.
+
+The full-screen DPF follow-up is signed/verified/published as `e86c174` on the
+isolated fork branch `diesel/fullscreen-dpfdeck`, based on combined `60a5690`.
+It shares the monitoring worker/decoder, six bank-selected pressure/temperature
+readings, optional regeneration status, private D2 settings and a synthetic
+emulator feed. Connector 243 preserves Bootmod3's 239 and all existing IDs.
+The installer choice is explicit and checks its own payload; full/standard
+settings survive replacement, uninstall and rollback. The missing full-screen
+MOST ownership mapping was exposed by two worker regressions and corrected;
+all 27 full-worker transport/coexistence cases pass on rerun. Four native DPF
+programs, 175 tool cases, 37 installer cases and focused ASan/UBSan pass. Across
+the focused and existing-native runs, the complete source passes 51 native
+programs and 419 distinct Python cases. Ninety gasoline renders match `4683ea6`
+exactly. All compiler/syntax checks and zero-diagnostic analysis pass. Actual C
+synthetic previews were inspected. Surface v7 requires a complete fresh bundle.
+The focused/native Make runs cover 253 Python cases. Nine also run among the
+175 tool/resource cases, giving 419 distinct cases across those runs.
+[All eleven source workflows pass](https://github.com/voioo/iDriveDeck/actions/runs/46140601856)
+on exact `e86c174`. Its DPF jobs include GCC, Clang, memory checks, installer
+tests and synthetic-preview generation. Fork #8 links the follow-up and green
+evidence; upstream #216 is now closed with its earlier source head preserved.
+
+Status checkpoint, 28 November: five smaller contributions (#208, #210, #213,
+#217 and #218) have shipped in upstream v0.7.19. Seven larger feature PRs remain
+drafts. The feature branches include current upstream `9ded391`; the fork's
+`main` had remained on v0.7.18 and was fast-forwarded to `9ded391` during this
+checkpoint. Local `main`, `origin/main` and `upstream/main` now agree. The GitHub
+connector could not update branch refs, so the existing authenticated Git remote
+performed the ordinary fast-forward; no force push or upstream merge was used.
+
+The result so far is host-tested source and upstream contributions, not an
+install-ready N57 package. No vehicle installation, command or physical
+validation has occurred. Exact DDE/EGS/firmware/hash/transport evidence and a
+legitimate QNX build remain necessary. BMW-specific oil, DPF mass/counters and
+remaining transmission signals still lack validated mappings. The full-screen
+rail, fault and DPF ports are host-tested on isolated fork branches. EntryNav2
+parity remains tracked where practical. Finish the
+current published-source/integration checks, incorporate maintainer feedback
+and prepare the staged physical-validation handoff before expanding scope.
+
+The [pinned validation guide](https://github.com/voioo/iDriveDeck/blob/87556192a31982d65d6c1e645a6b56ee9d9c867c/source/docs/DIESEL-VALIDATION.md#stage-a--non-invasive-parked-discovery)
+contains the existing A–G procedure. This checkpoint does not authorize a run.
+The owner's current instruction remains “Not yet; continue offline.”
+
+## Goal audit, 28 November 2026
+
+The full sixteen-section objective remains the acceptance scope. Signed source
+`e86c174fa5b19494d0cb26036ea29a3f333688ac` is the current combined candidate;
+its isolated fork branch already includes combined `60a5690`. The local test
+logs were inspected again on 28 November. No source changed after those tests.
+The audit below does not upgrade host results to a QNX build, recorded N57
+evidence or physical validation. Later entries in this progress document retain
+historical branch and PR states.
+
+| Objective section | Evidence inspected | Verdict and remaining gate |
+| --- | --- | --- |
+| 1. Exact target | [X5 record](DIESEL-VALIDATION.md#x5-f15-compatibility-record), private identity policy and head-unit capture source. | Owner description recorded. Exact N57/DDE/EGS identity, firmware, hashes, display and gateway remain unknown. |
+| 2. Contribution workflow | Git remotes, both remote `main` heads, seven matching fork review heads and upstream PR state. | Fork/upstream both `9ded391`; all seven WIP upstream drafts closed with fork links. Five smaller contributions are included in v0.7.19. Larger contributions await readiness gates. |
+| 3. Technical investigation | Gap/overlap matrix, historical issue records, native/full-screen sources, installer, transport and compatibility guides. | Offline audit and gap analysis exist. Exact freeze/crash causes and target ABI behavior remain unproven; no speculative firmware fix is justified. |
+| 4. Discovery | `discover_diesel.py`, `collect_ecu_identity.py`, `capture_headunit.py`, plan/replay/privacy tests and [validation guide](DIESEL-VALIDATION.md). | Bounded host-tested tools exist. The six-read identity tool deliberately cannot decode an unknown BMW record into a family. Real inventory and HSFZ/MOST availability remain to be observed; no physical report exists. |
+| 5. Diesel telemetry | [Signal coverage table](#remaining-signal-coverage-against-the-objective), shared decoder/capability cache and transport tests. | Verified standard formats are implemented and host-tested. Exact DDE support and measurements remain unknown. Fixed oil/oil pressure, gear/mode/converter, soot/ash/history and request/inhibition mappings remain incomplete. |
+| 6. Correct signal handling | Capability gates, per-field freshness, malformed/negative/timeout/coexistence tests, DDE741 findings and gasoline comparisons. | Host evidence covers the implemented policies. Temporary F303 is not introduced as a fixed source. Full-range boost and standalone EGS behavior still require exact-target evidence. |
+| 7. Existing apps | Standard/full-screen Boost, Warm, Shift and fault guides; production callback, settings and renderer tests. | Source improvements are implemented in both NBT Evo views. Exact oil/EGS validation and licensed ECU-scoped DDE descriptions remain missing. Raw faults do not substitute for verified descriptions. |
+| 8. DPFDeck | [DPF guide](DPFDECK.md), canonical worker/core, full-screen marker tests, five-panel rendering and optional installer tests. | Both source views are host-tested and monitoring-only. Supported standard pressure/temperature/status fields are distinct from unavailable mass/history/request/inhibition data. QNX, bank identity and parked comparisons remain open. |
+| 9. Stability | Worker ownership/parent-exit/lease tests, full-screen settings and surface checks, compatibility/porting docs. | Host behavior is covered. Exact F15/F16 runtime, CarPlay/OEM coexistence, target rendering and ENET-free operation remain unverified. No approved firmware profile was added for this X5. |
+| 10. Safety/security | Fixed read plans, privacy bounds, DPF request policy and explicit fault-clear confirmation. | Work performed remains offline. No physical collector, SSH enabling, ECU write, installation or restart occurred. Each applicable physical action still requires separate authorization. |
+| 11. Build/test infrastructure | Local native/focused/tools/installer/sanitizer logs and exact-head CI. | 51 native programs, 419 distinct Python cases and 37 top-level installer cases pass locally, plus focused memory/static/compiler/render checks. All eleven exact-head source workflows pass. `qcc` is absent from PATH; no licensed QNX build or real N57 fixture is available. |
+| 12. Vehicle stages A–G | [Staged procedure](DIESEL-VALIDATION.md#stage-a--non-invasive-parked-discovery), table below and installer rollback fixtures. | Procedure prepared. Physical discovery, compatibility, installation, factory regression, standalone operation and rollback have not been performed. Host rollback tests do not prove physical restoration. |
+| 13. Documentation | Signal provenance/limits, app guides, compatibility record, acquisition and rollback instructions. | Documentation distinguishes host/simulation from physical evidence and records unknowns. Confirmed ECU-family/firmware/vehicle rows cannot be populated without evidence. |
+| 14. Upstream reviews | Maintainer v0.7.19 inclusion comments, closed upstream draft state and open fork reviews #2–#8. | Five smaller contributions are included. The larger feature reviews remain on the fork; upstream review submissions await their applicable validation. No upstream merge was performed. |
+| 15. Definition of done | All rows above and the X5 evidence matrix. | Not achieved. Passing host tests cannot establish exact N57 compatibility or satisfy missing target evidence/build gates. Physical validation remains a separate explicit milestone. |
+| 16. Autonomous delivery | Signed/published candidate, current progress record, fork links and completed exact-head CI. | Offline implementation and host checks are recorded. The next target-build/evidence stages need legitimate QNX inputs and owner-approved vehicle access or applicable recorded captures. |
+
+The current external inputs are a legitimately licensed QNX SDP 6.5/ARM GCC
+4.4.2 build environment and authorized exact-vehicle evidence. Existing
+contributors have volunteered captures but have not supplied them. A general
+N57 model description, an advertised PID, a synthetic preview or another
+firmware's historical approval cannot replace these inputs. The A–G procedure
+below preserves the original validation scope.
+
+| Milestone | Current evidence | What must happen next |
+| --- | --- | --- |
+| A: exact vehicle and head-unit discovery | Owner description only; no physical capture. | Wired ENET, verified endpoints and separate approval of the printed 16-read default plan. Obtain authorized DDE/EGS inventory; SSH enabling/capture has a separate approval boundary. |
+| B: evidence and target build | Host fixtures, mock HSFZ/MOST, production callbacks and rasterizer checks pass. | Compare real replies with independent measurements; obtain legitimate QNX 6.5/framework inputs and build the matching candidate. |
+| C: compatibility check | Existing check/capture tools and firmware matrix; this X5's exact hashes/display are unknown. | Read-only compatibility check, exact framework pair/ABI, resolution, processor, gateway, storage and app-conflict inventory. |
+| D: controlled installation | Not performed; no candidate native binaries published. | Present exact candidate checksums, changed-file inventory and backups, then obtain installation/restart authorization. |
+| E: factory regression | Not performed. | Parked checks of OEM menus, CarPlay, navigation, Bluetooth/audio, camera/parking sensors, settings, cluster/HUD and startup/shutdown. |
+| F: standalone operation | Not performed; the current EGS temperature candidate needs reachable HSFZ. | After parked stability, test each reading with ENET/laptop/OBD adapter disconnected and through ignition/sleep cycles. |
+| G: rollback | Procedures documented; physical restoration unverified. | Authorized removal/restoration against the recorded backups and checksums, followed by factory checks. |
 
 Audit baseline: upstream `8567abaadd1305965b3ad39e3222575cd49c507d`,
 27 November 2026. Source is MIT licensed. No additional contribution template or
@@ -92,8 +209,8 @@ validation are recorded below, including full-screen WarmDeck and ShiftDeck:
 | PR | Updated source | Current evidence |
 | --- | --- | --- |
 | [#201](https://github.com/inotbarnacle/iDriveDeck/pull/201) | `8755619` | 121 tool cases; collector/plans/fixtures unchanged; EGS-only probe and heartbeat deadlines preserved. |
-| [#202](https://github.com/inotbarnacle/iDriveDeck/pull/202) | `506d872` | 21 native programs, 151 native-suite Python cases and 24 tool/resource cases; GCC/Clang, locale, static and sanitizer checks. |
-| [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) | `b1221ad` | 18 native programs, 97 Python regressions and 20 Shift/Warm resource cases; standard/full-screen profiles and persistent save warnings. Six workflows running; prior `54e8d93` passed all six. |
+| [#202](https://github.com/inotbarnacle/iDriveDeck/pull/202) | `e5ffcf2` | 33 native programs, 165 native-suite Python cases and 48 tool/resource cases; standard/full-screen telemetry, GCC/Clang, locale, static and focused sanitizer checks. All seven fork workflows pass. |
+| [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) | `b1221ad` | 18 native programs, 97 Python regressions and 20 Shift/Warm resource cases; standard/full-screen profiles and persistent save warnings. All six workflows pass, including production callbacks, GCC/Clang and memory checks. |
 | [#204](https://github.com/inotbarnacle/iDriveDeck/pull/204) | `a70c6f3` | 13 native programs, 106 Python regressions and four resource cases; status/raw/OBD reads and confirmed-clear guard preserved. |
 | [#205](https://github.com/inotbarnacle/iDriveDeck/pull/205) | `aabdc8c` | 11 native programs, 92 Python regressions and five resource cases; current DCT option and codec preserved. |
 | [#209](https://github.com/inotbarnacle/iDriveDeck/pull/209) | `8bee0e4` | 13 native programs, 92 Python regressions and seven resource cases; standard/full-screen measured targets, renderer, pipe retries and all source CI pass. |
@@ -128,9 +245,12 @@ staging paths without executable native inputs. The existing all-app recovery
 test caught an image archive requirement for text-only XDrive Control; correcting
 that requirement restores the baseline installer suite without vehicle commands.
 
-The native feature scope remains standard NBT Evo; equivalent full-screen/
-EntryNav2 features and the complete goal's QNX/vehicle validation remain open.
-The new combined source passes the local checks recorded below; all eleven fork workflows pass. The older `f9d5555` remains a historical checkpoint. Draft status follows
+The native features cover standard NBT Evo, with the full-screen Warm, Shift and
+Boost follow-ups described below. Remaining full-screen/EntryNav2 features and
+the complete goal's QNX/vehicle validation remain open.
+Earlier combined `0a3eca5` passed all eleven fork workflows. The latest
+combined source and passing CI are recorded below. The older `f9d5555` remains
+a historical checkpoint. Draft status follows
 the objective's requirement for applicable physical validation; host CI alone
 does not satisfy it. Upstream descriptions/comments remain human friendly.
 
@@ -159,7 +279,7 @@ reproduces BoostDeck, ShiftDeck, WarmDeck and DPFDeck XML plus Shift constants.
 The reagent preview renders captured production model updates with the combined
 assets and is labeled synthetic. This does not establish head-unit rendering.
 
-The full-screen audit confirms a separate 31-channel core and consumer, a
+The earlier full-screen audit found a separate 31-channel core and consumer, a
 6,000–8,000-RPM Shift renderer/settings path, and a Warm renderer that reparses
 rounded temperature strings. These need coherent feature ports. Its public
 renderer builds and links on the host without private inputs and confirms the
@@ -200,7 +320,8 @@ The earlier `715aad5` remains an eleven-workflow green historical checkpoint.
 
 Full-screen ShiftDeck is signed and published at `b1221ad` in existing
 [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203), explicitly based on
-#209. The earlier `54e8d93` passed all six workflows; final-source CI is running.
+#209. [Final-source CI](https://github.com/voioo/iDriveDeck/actions/runs/46124183984)
+passes all six workflows at `b1221ad`.
 The full-screen G1 mph flag and all 21
 gasoline targets are preserved; its own S2 stores diesel choices. The actual
 rasterizer retains gasoline pixels above the advisory footer for all 21 targets
@@ -231,9 +352,45 @@ Its full local run passes 40 distinct native programs and 197 native-suite Pytho
 cases. All 166 tool/resource cases pass; four fault-resource cases also run from
 Make and are counted once, giving 363 distinct Python cases. The final warning
 follow-up also passes focused Shift/Warm runtime and resource checks in the
-combined tree. The integration will be published with signed merges and fresh CI.
+combined tree. Signed integration `6bae497` is published; all eleven fork
+workflows pass, including the [current diagnostic run](https://github.com/voioo/iDriveDeck/actions/runs/46124289782).
+Its native and full-screen native subtrees are `4195c8ae` and `35112283`.
 No additional upstream PR is opened. EntryNav2 and the other full-screen diesel
 features, licensed QNX and all exact-target physical milestones remain open.
+
+Full-screen Boost follow-up, 28 November: isolated worktree
+`bmw-idrive-full-boost` builds on #202 plus the published #203/#209 runtime in
+signed base `7b6f43b`. The implementation shares the standard
+58-channel core and capability-gated Boost/Warm workers, preserves existing
+custom layouts and adds detected defaults, independent freshness and B1–B6/D1
+emulator persistence. Surface v4 retains 496 bytes and requires the complete
+matching bundle. The old picker labels Lambda target but invokes STFT bank 1;
+all 58 current names/actions are checked without renumbering stored IDs.
+
+Current offline checks pass 48 tool/resource cases, four GCC/Clang Library syntax
+variants and focused Boost/Warm/Shift ASan/UBSan. Host Library analysis has zero
+diagnostics after guarding the earlier Boost read-error paths. Ninety captured
+gasoline renders are pixel-identical to `b1221ad` across five panels, both styles
+and nine colors. Full-screen build-input checks record the real script and link
+host worker fakes; they do not build QNX or execute the target placeholders.
+The final native suite passes 33 distinct programs and 165 Python cases. Signed
+commit `e5ffcf2` is published to existing #202, whose human-friendly description
+lists the #203 → #209 dependency and a focused comparison. Its [seven fork
+workflows](https://github.com/voioo/iDriveDeck/actions/runs/46129421483) all pass,
+and the PR description records that final-source result.
+The root checkout was fast-forwarded while preserving this progress document.
+Combined merge `2a8dd24` is signed, verified and published. Only Make's target/flag
+unions needed resolution. Its full local run passes 43 distinct native programs,
+206 native-suite Python cases and 170 tool/resource cases: 376 distinct Python
+cases in total. Make also runs four fault-resource cases included in the tool
+total; they are counted once. Native and full-screen native subtrees are
+`2d2c2b74` and `cbb6247b`. Its [eleven fork workflows](https://github.com/voioo/iDriveDeck/actions/runs/46130177653)
+all pass. The prior `6bae497` remains historical evidence. This result covers the
+combined surface-v4 source, not the uncommitted surface-v5 rail follow-up.
+Rail scale #205, fault and DPF full-screen ports, EntryNav2, exact ECU support
+and licensed QNX/physical validation remain open. No additional PR is planned
+for this follow-up, and all seven open PRs remain drafts under section 14 of
+the objective while applicable validation is outstanding.
 
 Publication update, 27 November: the configured SSH signer is working and the
 focused source commits are signed and published. Earlier references below to
@@ -1425,9 +1582,10 @@ not exact-ECU support, a BMW plausibility limit or a native app mapping.
 
 The overall N57 objective remains active. These drafts do not complete it.
 The focused drafts and human-friendly descriptions are published. Current branch
-evidence is recorded at the beginning of this document; the older combined
-checkout's green CI predates upstream v0.7.19. The new combined local run is
-recorded above; all eleven fork workflows pass at `0a3eca5`.
+evidence is recorded at the beginning of this document. Combined `2a8dd24`
+includes current upstream and all seven feature histories; its complete local
+checks and all eleven exact-head CI workflows pass. The earlier `6bae497` passed all eleven
+fork workflows. Earlier integration entries are historical checkpoints.
 Next: incorporate maintainer feedback and continue evidence review for the
 remaining BMW-specific oil, DPF mass/counter and transmission states.
 The maintainer incorporated #217's locale fix into upstream v0.7.19, and the

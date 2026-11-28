@@ -10,7 +10,7 @@ MOST_HEADERS = src/common/most/most_link.h src/common/most/dsi_client.h src/comm
 FAKE_DSI = tests/fake_dsi.c tests/fake_dme.c tests/fake_dsi.h tests/fake_dme.h
 WORKER_COMMON = $(CORE_LINK) $(MOST) tests/fake_most_env.c $(FAKE_DSI) $(HEADERS) $(MOST_HEADERS)
 HOST_LINK = $(CC) $(CFLAGS) -pthread -DMOST_HOST -Isrc/common -Isrc/ipc -Isrc/workers -Itests
-.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles test-warm-readiness test-full-warm test-full-shift test-full-boost
+.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles test-warm-readiness test-full-warm test-full-shift test-full-boost test-boost-scale
 
 FULLSCREEN_NATIVE ?= ../fullscreen/native
 FULL_SHARED_HEADERS = $(wildcard src/common/*.h) src/common/boost_signals.def
@@ -257,10 +257,21 @@ test-shift-profiles: test-full-shift build/test-shift-preferences build/test-shi
 	mkdir -p build/shift-preview-models
 	./build/test-shift-profile-plugin build/shift-preview-models
 
+build/test-boost-rail-scale: tests/test_boost_rail_scale.cpp build/boost-test-core.o src/plugins/boost_rail_scale.h src/common/gauge_preferences.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/common $(filter %.cpp %.o,$^) -lm -o $@
+
+# MIT framework stand-in shared with PR #143/#203/#204; no factory libraries.
+build/test-boost-scale-plugin: tests/test_boost_scale_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h build/boost-test-core.o build/boost-defaults.o src/plugins/boost_deck.cpp src/plugins/boost_rail_scale.h src/plugins/boost_preferences.h src/plugins/dial_scales.h src/common/gauge_preferences.h src/common/diagnostic_gateway.h src/common/diagnostic_worker.h sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp build/boost-test-core.o build/boost-defaults.o -lm -o $@
+
+test-boost-scale: build/test-boost-rail-scale build/test-boost-scale-plugin
+	./build/test-boost-rail-scale
+	./build/test-boost-scale-plugin
+
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-build-inputs test-full-boost test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles test-warm-readiness
+test: test-build-inputs test-full-boost test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles test-warm-readiness test-boost-scale
 	./build/test-obd-capabilities
 	./build/test-boost-preferences
 	./build/test-launch-timer

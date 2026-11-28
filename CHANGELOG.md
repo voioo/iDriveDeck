@@ -8,6 +8,12 @@
 - BoostDeck adds standard EGT bank/sensor gauges with PID and sensor-support gating, independent freshness and bounded polling. Detected defaults choose at most one EGT. No exhaust-location or regeneration inference is added.
 - Existing signal IDs, ordinary NBG7 packets and B1/B2 settings retain their original meaning. EGT readings use 64-bit masks, NBG8/NBC2 frames and B3 assignments; matching plugin and worker builds are required. These changes are host-tested source, not N57 or QNX runtime approval.
 
+## Unreleased (source only)
+
+- BoostDeck offers a separate diesel rail-pressure display scale instead of
+  filling its gasoline 250-bar scale for every higher reading. This is host-tested
+  source, with no rebuilt QNX package or vehicle validation.
+
 ## v0.7.20
 
 - BEAMer and Road Jet use a speed cutoff of 8 km/h (about 5 mph). Either app pauses or stops if speed exceeds the cutoff or the reading is lost.

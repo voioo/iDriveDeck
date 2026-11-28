@@ -30,3 +30,7 @@ codes are parsed from their own response format, never shortened BMW UDS codes.
 BoostDeck's [diesel rail display scale](docs/BOOST-DIESEL-SCALE.md) is selectable
 without changing the gasoline range or saved gauge configuration. Host tests do
 not establish vehicle support.
+
+WarmDeck's [independent temperature targets](docs/WARM-READINESS.md) retain fresh
+fluid states when another reading is unavailable. Its app targets are advisory;
+the display refers drivers to the vehicle's guidance instead of a generic RPM limit.

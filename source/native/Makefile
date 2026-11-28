@@ -10,7 +10,7 @@ MOST_HEADERS = src/common/most/most_link.h src/common/most/dsi_client.h src/comm
 FAKE_DSI = tests/fake_dsi.c tests/fake_dme.c tests/fake_dsi.h tests/fake_dme.h
 WORKER_COMMON = $(CORE_LINK) $(MOST) tests/fake_most_env.c $(FAKE_DSI) $(HEADERS) $(MOST_HEADERS)
 HOST_LINK = $(CC) $(CFLAGS) -pthread -DMOST_HOST -Isrc/common -Isrc/ipc -Isrc/workers -Itests
-.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles test-faults test-boost-scale
+.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles test-faults test-boost-scale test-warm-readiness
 
 assets: | build
 	unzip -p ../../packages/dashboard.zip BoostDeck/BoostDeck_ALL_Images.zip > build/boostdeck-base-images.zip
@@ -157,7 +157,15 @@ build/warmdeck-collector: src/workers/warm_deck_worker.c src/common/dct_temperat
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
 build/test-warm-progress: tests/test_warm_progress.cpp src/plugins/warm_progress.h src/common/warm_units.h src/common/gauge_preferences.h src/ipc/warm_frame.h | build
-	$(CXX) -O2 -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/common -Isrc/ipc $< -o $@
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/plugins -Isrc/common -Isrc/ipc $< -o $@
+
+build/test-warm-readiness-plugin: tests/test_warm_readiness_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/warm_deck.cpp src/plugins/warm_progress.h src/common/warm_units.h src/common/gauge_preferences.h src/ipc/warm_frame.h sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp -o $@
+
+test-warm-readiness: build/test-warm-progress build/test-warm-readiness-plugin build/warmdeck-collector
+	./build/test-warm-progress
+	./build/test-warm-readiness-plugin
+	$(PYTHON) -B tests/test_warm_freshness.py
 
 build/boost-test-core.o: $(CORE) $(HEADERS) | build
 	$(CC) $(CFLAGS) -Isrc/common -c $< -o $@
@@ -210,7 +218,7 @@ test-boost-scale: build/test-boost-rail-scale build/test-boost-scale-plugin
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles test-faults test-boost-scale
+test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles test-faults test-boost-scale test-warm-readiness
 	./build/test-obd-capabilities
 	./build/test-warm-progress
 	./build/test-boost-preferences
@@ -221,7 +229,6 @@ test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-
 	./build/test-diag-link
 	$(PYTHON) -B tests/test_udp_ports.py
 	$(PYTHON) -B tests/test_drive_apps.py
-	$(PYTHON) -B tests/test_warm_freshness.py
 	$(PYTHON) -B tests/test_oneshot_most.py
 	$(PYTHON) -B tests/test_obd_faults.py
 	$(PYTHON) -B tests/test_transport.py

@@ -268,20 +268,24 @@ test-boost-scale: build/test-boost-rail-scale build/test-boost-scale-plugin
 	./build/test-boost-rail-scale
 	./build/test-boost-scale-plugin
 
+build/test-fault-text: tests/test_fault_text.c src/common/fault_text.h src/common/fault_codes.h src/common/obd_fault_codes.h | build
+	$(CC) $(CFLAGS) -Isrc/common $< -o $@
+
 build/test-fault-codes: tests/test_fault_codes.c src/common/fault_codes.h | build
 	$(CC) $(CFLAGS) -Isrc/common $< -o $@
 
 build/test-obd-fault-codes: tests/test_obd_fault_codes.c src/common/obd_fault_codes.h | build
 	$(CC) $(CFLAGS) -Isrc/common $< -o $@
 
-build/test-fault-display: tests/test_fault_display.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h | build
+build/test-fault-display: tests/test_fault_display.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h src/common/fault_text.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/common -Isrc/plugins $< -o $@
 
 # Same MIT framework stand-in as PR #143/#203; no factory libraries are linked.
-build/test-fault-plugin: tests/test_fault_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/engine_codes.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h src/common/dme_descriptions.h sdk/bmw_list.h | build
+build/test-fault-plugin: tests/test_fault_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/engine_codes.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h src/common/dme_descriptions.h sdk/bmw_list.h src/common/fault_text.h | build
 	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp -o $@
 
-test-faults: build/test-fault-codes build/test-obd-fault-codes build/test-fault-display build/test-fault-plugin
+test-faults: build/test-fault-text build/test-fault-codes build/test-obd-fault-codes build/test-fault-display build/test-fault-plugin
+	./build/test-fault-text
 	./build/test-fault-codes
 	./build/test-obd-fault-codes
 	./build/test-fault-display

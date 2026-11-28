@@ -1,11 +1,13 @@
 # Diesel compatibility investigation
 
-Contribution workflow correction, 28 November: the owner clarified that draft
-development reviews belong on the fork, with upstream PRs opened only when ready
-for review. This supersedes the earlier objective's draft-upstream guidance.
-Seven fork drafts are now the working review locations:
+Current contribution workflow, 28 November: unfinished work stays on the fork.
+The owner clarified that host-tested source can be submitted upstream for review
+while a maintainer performs the licensed QNX build. Target compilation, ABI and
+physical validation remain explicit pre-release gates. The seven existing
+upstream PRs are now ready for source review; their matching fork reviews remain
+available for continued development:
 
-| Feature | Fork review | Earlier upstream draft |
+| Feature | Fork development review | Upstream source review |
 | --- | --- | --- |
 | Discovery | [#2](https://github.com/voioo/iDriveDeck/pull/2) | [#201](https://github.com/inotbarnacle/iDriveDeck/pull/201) |
 | WarmDeck | [#3](https://github.com/voioo/iDriveDeck/pull/3) | [#209](https://github.com/inotbarnacle/iDriveDeck/pull/209) |
@@ -15,16 +17,18 @@ Seven fork drafts are now the working review locations:
 | Fault handling | [#7](https://github.com/voioo/iDriveDeck/pull/7) | [#204](https://github.com/inotbarnacle/iDriveDeck/pull/204) |
 | DPFDeck | [#8](https://github.com/voioo/iDriveDeck/pull/8) | [#216](https://github.com/inotbarnacle/iDriveDeck/pull/216) |
 
-Existing fork #1 (worker-ownership regressions) is preserved. All seven new
-reviews are confirmed open drafts and link the original discussion. Following
-the owner's repeated clarification of the intended fork-first workflow, all
-seven original upstream drafts were closed on 28 November at 11:43 UTC. Each
-upstream description links its matching fork review and preserves the original
-notes. Branches, discussions and volunteer instructions remain available. Future
-work stays on the fork; upstream PRs are opened only when ready for review.
-Descriptions and comments must remain human friendly.
+Existing fork #1 (worker-ownership regressions) is preserved. Upstream #201,
+#209, #203, #202, #205, #204 and #216 were reopened as ready for review on
+28 November with their exact tested source heads preserved. No duplicate PR
+was created. Descriptions identify the submitted source, passing fork checks,
+remaining target checks and full-screen follow-ups still on the fork. Review
+order for the shared runtime is WarmDeck #209, ShiftDeck #203, then telemetry
+#202. The telemetry PR requests a maintainer build of combined `e86c174` and
+review of GitHub's `action_required` upstream workflow runs, which have no jobs.
+Branches, discussions and volunteer instructions remain available. Descriptions
+and comments must remain human friendly.
 
-Current status, 28 November at 11:49 UTC: both remote `main` branches point to
+Current source status, verified 28 November: both remote `main` branches point to
 `9ded391`. The latest complete source candidate is signed `e86c174` on the fork's
 `diesel/fullscreen-dpfdeck` branch. Local verification passes 51 native programs,
 419 distinct Python cases and 37 top-level installer cases, including focused
@@ -35,9 +39,10 @@ The source includes standard and full-screen BoostDeck, WarmDeck, ShiftDeck,
 fault handling and DPFDeck improvements, plus the discovery tools. This remains
 host-tested source, not an install-ready or physically validated X5 release.
 The exact DDE/EGS, firmware/hash/display/transport evidence, licensed QNX build,
-and authorized parked validation remain outstanding. The seven upstream drafts
-are now closed; historical entries below describing them as open or awaiting a
-cleanup choice record the earlier state only.
+and authorized parked validation remain outstanding. The seven upstream PRs
+are open and ready for source review. Historical entries below describing
+closed drafts, pending cleanup or a local SDK as a prerequisite for source
+review record earlier decisions and are superseded by this workflow.
 
 Workflow audit, 28 November at 10:22 UTC: all seven fork drafts above are open
 and preserve the exact heads of their original upstream drafts. Both remote
@@ -114,9 +119,9 @@ The focused/native Make runs cover 253 Python cases. Nine also run among the
 [All eleven source workflows pass](https://github.com/voioo/iDriveDeck/actions/runs/46140601856)
 on exact `e86c174`. Its DPF jobs include GCC, Clang, memory checks, installer
 tests and synthetic-preview generation. Fork #8 links the follow-up and green
-evidence; upstream #216 is now closed with its earlier source head preserved.
+evidence; upstream #216 is ready for source review with its tested head preserved.
 
-Status checkpoint, 28 November: five smaller contributions (#208, #210, #213,
+Historical checkpoint, before the source-review clarification: five smaller contributions (#208, #210, #213,
 #217 and #218) have shipped in upstream v0.7.19. Seven larger feature PRs remain
 drafts. The feature branches include current upstream `9ded391`; the fork's
 `main` had remained on v0.7.18 and was fast-forwarded to `9ded391` during this
@@ -151,7 +156,7 @@ historical branch and PR states.
 | Objective section | Evidence inspected | Verdict and remaining gate |
 | --- | --- | --- |
 | 1. Exact target | [X5 record](DIESEL-VALIDATION.md#x5-f15-compatibility-record), private identity policy and head-unit capture source. | Owner description recorded. Exact N57/DDE/EGS identity, firmware, hashes, display and gateway remain unknown. |
-| 2. Contribution workflow | Git remotes, both remote `main` heads, seven matching fork review heads and upstream PR state. | Fork/upstream both `9ded391`; all seven WIP upstream drafts closed with fork links. Five smaller contributions are included in v0.7.19. Larger contributions await readiness gates. |
+| 2. Contribution workflow | Git remotes, both remote `main` heads, seven matching fork review heads and upstream PR state. | Fork/upstream both `9ded391`; all seven tested feature PRs are now ready for source review. Further work stays on the fork. Five smaller contributions are included in v0.7.19. |
 | 3. Technical investigation | Gap/overlap matrix, historical issue records, native/full-screen sources, installer, transport and compatibility guides. | Offline audit and gap analysis exist. Exact freeze/crash causes and target ABI behavior remain unproven; no speculative firmware fix is justified. |
 | 4. Discovery | `discover_diesel.py`, `collect_ecu_identity.py`, `capture_headunit.py`, plan/replay/privacy tests and [validation guide](DIESEL-VALIDATION.md). | Bounded host-tested tools exist. The six-read identity tool deliberately cannot decode an unknown BMW record into a family. Real inventory and HSFZ/MOST availability remain to be observed; no physical report exists. |
 | 5. Diesel telemetry | [Signal coverage table](#remaining-signal-coverage-against-the-objective), shared decoder/capability cache and transport tests. | Verified standard formats are implemented and host-tested. Exact DDE support and measurements remain unknown. Fixed oil/oil pressure, gear/mode/converter, soot/ash/history and request/inhibition mappings remain incomplete. |
@@ -163,13 +168,15 @@ historical branch and PR states.
 | 11. Build/test infrastructure | Local native/focused/tools/installer/sanitizer logs and exact-head CI. | 51 native programs, 419 distinct Python cases and 37 top-level installer cases pass locally, plus focused memory/static/compiler/render checks. All eleven exact-head source workflows pass. `qcc` is absent from PATH; no licensed QNX build or real N57 fixture is available. |
 | 12. Vehicle stages A–G | [Staged procedure](DIESEL-VALIDATION.md#stage-a--non-invasive-parked-discovery), table below and installer rollback fixtures. | Procedure prepared. Physical discovery, compatibility, installation, factory regression, standalone operation and rollback have not been performed. Host rollback tests do not prove physical restoration. |
 | 13. Documentation | Signal provenance/limits, app guides, compatibility record, acquisition and rollback instructions. | Documentation distinguishes host/simulation from physical evidence and records unknowns. Confirmed ECU-family/firmware/vehicle rows cannot be populated without evidence. |
-| 14. Upstream reviews | Maintainer v0.7.19 inclusion comments, closed upstream draft state and open fork reviews #2–#8. | Five smaller contributions are included. The larger feature reviews remain on the fork; upstream review submissions await their applicable validation. No upstream merge was performed. |
+| 14. Upstream reviews | Maintainer v0.7.19 inclusion comments, ready upstream PR state and open fork reviews #2–#8. | Five smaller contributions are included. Seven existing PRs are ready for source review with exact-head fork CI green. The maintainer is asked to perform licensed target builds and review upstream workflow action requirements. No upstream merge was performed. |
 | 15. Definition of done | All rows above and the X5 evidence matrix. | Not achieved. Passing host tests cannot establish exact N57 compatibility or satisfy missing target evidence/build gates. Physical validation remains a separate explicit milestone. |
-| 16. Autonomous delivery | Signed/published candidate, current progress record, fork links and completed exact-head CI. | Offline implementation and host checks are recorded. The next target-build/evidence stages need legitimate QNX inputs and owner-approved vehicle access or applicable recorded captures. |
+| 16. Autonomous delivery | Signed/published candidate, current progress record, upstream/fork links and completed exact-head CI. | Source-review submissions are delivered. A maintainer may provide the licensed target build; exact-vehicle evidence and the physical stages still need approved access or applicable recorded captures. |
 
-The current external inputs are a legitimately licensed QNX SDP 6.5/ARM GCC
-4.4.2 build environment and authorized exact-vehicle evidence. Existing
-contributors have volunteered captures but have not supplied them. A general
+The remaining target checks need a legitimately licensed QNX SDP 6.5/ARM GCC
+4.4.2 build environment and authorized exact-vehicle evidence. The QNX build
+may be performed by an appropriately licensed maintainer; the contributor does
+not need to obtain a separate SDK merely to submit host-tested source for review.
+Existing contributors have volunteered captures but have not supplied them. A general
 N57 model description, an advertised PID, a synthetic preview or another
 firmware's historical approval cannot replace these inputs. The A–G procedure
 below preserves the original validation scope.

@@ -19,14 +19,14 @@ DCT option, units and source-layout changes. No vehicle, firmware or QNX
 validation is inferred.
 
 Reconciliation checkpoint, 28 November: all seven existing drafts now contain
-signed merges of upstream `9ded391`, and all five workflows pass on each current
-feature head, including the full-screen WarmDeck follow-up:
+signed merges of upstream `9ded391`. Current source checks and pending
+validation are recorded below, including full-screen WarmDeck and ShiftDeck:
 
 | PR | Updated source | Current evidence |
 | --- | --- | --- |
 | [#201](https://github.com/inotbarnacle/iDriveDeck/pull/201) | `8755619` | 121 tool cases; collector/plans/fixtures unchanged; EGS-only probe and heartbeat deadlines preserved. |
 | [#202](https://github.com/inotbarnacle/iDriveDeck/pull/202) | `506d872` | 21 native programs, 151 native-suite Python cases and 24 tool/resource cases; GCC/Clang, locale, static and sanitizer checks. |
-| [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) | `2c8e3b0` | 11 native programs, 92 Python regressions and 11 resource cases; all 21 gasoline targets, migrations, callbacks and generated assets. |
+| [#203](https://github.com/inotbarnacle/iDriveDeck/pull/203) | `b1221ad` | 18 native programs, 97 Python regressions and 20 Shift/Warm resource cases; standard/full-screen profiles and persistent save warnings. Six workflows running; prior `54e8d93` passed all six. |
 | [#204](https://github.com/inotbarnacle/iDriveDeck/pull/204) | `a70c6f3` | 13 native programs, 106 Python regressions and four resource cases; status/raw/OBD reads and confirmed-clear guard preserved. |
 | [#205](https://github.com/inotbarnacle/iDriveDeck/pull/205) | `aabdc8c` | 11 native programs, 92 Python regressions and five resource cases; current DCT option and codec preserved. |
 | [#209](https://github.com/inotbarnacle/iDriveDeck/pull/209) | `8bee0e4` | 13 native programs, 92 Python regressions and seven resource cases; standard/full-screen measured targets, renderer, pipe retries and all source CI pass. |
@@ -117,8 +117,8 @@ programs, 92 Python regressions and seven resources pass locally; focused
 ASan/UBSan passes. The full-Library analysis retains four pre-existing Boost
 stream diagnostics, with no new diagnostics under identical SDK flags.
 [Source CI](https://github.com/voioo/iDriveDeck/actions/runs/46120159391) passes all five workflows.
-The green combined `715aad5` still uses Warm `1bc75de`; it does not yet contain
-this follow-up. Next, incorporate `8bee0e4` into that combined tree next.
+The earlier combined `715aad5` used Warm `1bc75de`; the follow-up is now included
+in the combined update below.
 QNX/ARM emulator/parked validation, other full-screen features and EntryNav2
 integration remain open; no firmware or exact-N57 support claim is added.
 
@@ -127,17 +127,46 @@ includes `8bee0e4` and keeps all earlier feature histories. Its full local run
 passes 37 distinct native test programs and 192 native-suite Python cases.
 All 164 tool/resource cases pass; the four fault-resource cases also run from
 Make and are counted once, giving 356 distinct Python cases. The tested native
-subtree is `15d7f01e2dd39456fbfe055f0cf9e746590ad4b2`. Fork CI will run after publication.
+subtree is `15d7f01e2dd39456fbfe055f0cf9e746590ad4b2`. Signed merge `0a3eca5`
+is pushed and [all eleven fork workflows pass](https://github.com/voioo/iDriveDeck/actions/runs/46121425102).
 The earlier `715aad5` remains an eleven-workflow green historical checkpoint.
 
-Full-screen ShiftDeck work is based on #209's measured renderer/runtime support,
-so #203 will explicitly depend on #209. Its pending implementation must preserve
-the full-screen G1 file's mph flag, whose polarity differs from the standard
-app's metric flag, as well as all 21 gasoline targets. No new upstream PR is
-needed for this follow-up. The Shift worktree has a signed, unpublished merge
-of its standard feature with `8bee0e4`; the full-screen Shift code is not yet
-published. Surface/renderer changes require a coherent matching bundle and
-remain independent of firmware, exact-ECU and physical-validation evidence.
+Full-screen ShiftDeck is signed and published at `b1221ad` in existing
+[#203](https://github.com/inotbarnacle/iDriveDeck/pull/203), explicitly based on
+#209. The earlier `54e8d93` passed all six workflows; final-source CI is running.
+The full-screen G1 mph flag and all 21
+gasoline targets are preserved; its own S2 stores diesel choices. The actual
+rasterizer retains gasoline pixels above the advisory footer for all 21 targets
+on all five panels. Diesel has selectable 4,000/5,000/6,000-RPM displays and
+100-RPM target steps, with measured RPM controlling lights.
+
+Full-screen drive frames are now 24 bytes, retaining independent RPM/speed
+request-start times; cached speed keeps its age while RPM advances. The worker
+sends from its activity socket and adds no diagnostic request. Surface v3 keeps
+496 bytes, retains measured Warm states and supplies explicit Shift fields.
+Older surface and 16-byte worker frames are rejected. The complete matching
+bundle must be rebuilt, including the Shift/Launch worker and optional/emulator
+components. The standard worker/frame is unchanged. No QNX, exact-ECU or vehicle
+result follows. Eighteen native programs, 97 native-suite Python cases and 20
+Shift/Warm resource cases pass; focused Clang ASan/UBSan passes. The old rasterizer
+and reply-time worker fail their negative controls. Existing Boost analysis has
+four unchanged diagnostics, documented rather than claimed clean.
+
+The final save-feedback follow-up is signed and published in the same PR.
+Failed saves remain visible after leaving settings, and unit failures also
+appear in the Speed units menu. Production callbacks, worker transport,
+rasterizer and Warm checks pass normal and Clang ASan/UBSan. Full-screen
+resource reproduction/bindings and both Library syntax branches pass. The final
+source retains the same four baseline Boost analyzer diagnostics.
+
+The combined integration includes the main Shift port in signed merge `aba5d09`.
+Its full local run passes 40 distinct native programs and 197 native-suite Python
+cases. All 166 tool/resource cases pass; four fault-resource cases also run from
+Make and are counted once, giving 363 distinct Python cases. The final warning
+follow-up also passes focused Shift/Warm runtime and resource checks in the
+combined tree. The integration will be published with signed merges and fresh CI.
+No additional upstream PR is opened. EntryNav2 and the other full-screen diesel
+features, licensed QNX and all exact-target physical milestones remain open.
 
 Publication update, 27 November: the configured SSH signer is working and the
 focused source commits are signed and published. Earlier references below to
@@ -1331,7 +1360,7 @@ The overall N57 objective remains active. These drafts do not complete it.
 The focused drafts and human-friendly descriptions are published. Current branch
 evidence is recorded at the beginning of this document; the older combined
 checkout's green CI predates upstream v0.7.19. The new combined local run is
-recorded above; all eleven fork workflows pass at `715aad5`.
+recorded above; all eleven fork workflows pass at `0a3eca5`.
 Next: incorporate maintainer feedback and continue evidence review for the
 remaining BMW-specific oil, DPF mass/counter and transmission states.
 The maintainer incorporated #217's locale fix into upstream v0.7.19, and the

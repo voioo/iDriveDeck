@@ -21,3 +21,8 @@ defaults remain unchanged; exact vehicle and QNX validation remain pending.
 
 [ShiftDeck engine profiles](docs/SHIFT-PROFILES.md) covers diesel target/display
 settings, legacy preferences, resource generation and host validation limits.
+
+[Engine fault-code handling](docs/FAULT-CODES.md) describes supported status bits,
+the DDE/raw view, separate standard confirmed/pending/permanent emissions-code
+reads, description limitations and explicit clear confirmation. Standard OBD
+codes are parsed from their own response format, never shortened BMW UDS codes.

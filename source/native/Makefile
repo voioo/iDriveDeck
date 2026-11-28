@@ -10,7 +10,7 @@ MOST_HEADERS = src/common/most/most_link.h src/common/most/dsi_client.h src/comm
 FAKE_DSI = tests/fake_dsi.c tests/fake_dme.c tests/fake_dsi.h tests/fake_dme.h
 WORKER_COMMON = $(CORE_LINK) $(MOST) tests/fake_most_env.c $(FAKE_DSI) $(HEADERS) $(MOST_HEADERS)
 HOST_LINK = $(CC) $(CFLAGS) -pthread -DMOST_HOST -Isrc/common -Isrc/ipc -Isrc/workers -Itests
-.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles
+.PHONY: assets launch-assets test test-build-inputs test-boost-defaults test-egt test-egr test-pressure test-reagent test-launch-records test-shift-profiles test-faults
 
 assets: | build
 	unzip -p ../../packages/dashboard.zip BoostDeck/BoostDeck_ALL_Images.zip > build/boostdeck-base-images.zip
@@ -40,7 +40,7 @@ build/shift-deck: src/workers/shift_deck_worker.c $(WORKER_COMMON) | build
 build/mhd-maps: src/workers/mhd_maps_worker.c $(WORKER_COMMON) | build
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
-build/engine-codes: src/workers/engine_codes_worker.c $(WORKER_COMMON) | build
+build/engine-codes: src/workers/engine_codes_worker.c src/common/fault_codes.h src/common/obd_fault_codes.h $(WORKER_COMMON) | build
 	$(HOST_LINK) $(filter %.c,$^) -lm -o $@
 
 build/bootmod3: src/workers/bootmod3_suite_worker.c src/workers/bm3_profiles.h $(WORKER_COMMON) | build
@@ -177,10 +177,29 @@ test-shift-profiles: build/test-shift-preferences build/test-shift-profile-plugi
 	mkdir -p build/shift-preview-models
 	./build/test-shift-profile-plugin build/shift-preview-models
 
+build/test-fault-codes: tests/test_fault_codes.c src/common/fault_codes.h | build
+	$(CC) $(CFLAGS) -Isrc/common $< -o $@
+
+build/test-obd-fault-codes: tests/test_obd_fault_codes.c src/common/obd_fault_codes.h | build
+	$(CC) $(CFLAGS) -Isrc/common $< -o $@
+
+build/test-fault-display: tests/test_fault_display.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -Wall -Wextra -Werror -Isrc/common -Isrc/plugins $< -o $@
+
+# Same MIT framework stand-in as PR #143/#203; no factory libraries are linked.
+build/test-fault-plugin: tests/test_fault_plugin.cpp tests/fake_bmw.cpp tests/fake_bmw.h src/plugins/engine_codes.cpp src/plugins/fault_display.h src/plugins/fault_preferences.h src/common/fault_codes.h src/common/obd_fault_codes.h src/common/gauge_preferences.h src/common/dme_descriptions.h sdk/bmw_list.h | build
+	$(CXX) $(CXXFLAGS) -std=gnu++98 -fno-access-control -Isdk -Isrc/common -Isrc/ipc -Isrc/plugins -Itests $< tests/fake_bmw.cpp -o $@
+
+test-faults: build/test-fault-codes build/test-obd-fault-codes build/test-fault-display build/test-fault-plugin
+	./build/test-fault-codes
+	./build/test-obd-fault-codes
+	./build/test-fault-display
+	./build/test-fault-plugin
+
 launch-assets:
 	$(PYTHON) ../tools/launch_art.py
 
-test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles
+test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-defaults build/xdrive-control build/boost-deck build/shift-deck build/mhd-maps build/engine-codes build/test-core build/test-obd-capabilities build/test-most build/test-diag-link build/bootmod3 build/exhaust-flap build/test-launch-timer build/test-boost-preferences build/test-warm-progress build/warmdeck-collector build/mgflasher build/hybriddeck-collector build/test-core-locale build/beamer build/road-jet test-launch-records test-shift-profiles test-faults
 	./build/test-obd-capabilities
 	./build/test-warm-progress
 	./build/test-boost-preferences
@@ -193,8 +212,10 @@ test: test-build-inputs test-reagent test-pressure test-egr test-egt test-boost-
 	$(PYTHON) -B tests/test_drive_apps.py
 	$(PYTHON) -B tests/test_warm_freshness.py
 	$(PYTHON) -B tests/test_oneshot_most.py
+	$(PYTHON) -B tests/test_obd_faults.py
 	$(PYTHON) -B tests/test_transport.py
 	$(PYTHON) -B tests/test_diesel_capabilities.py
 	$(PYTHON) -B tests/test_egt_transport.py
 	$(PYTHON) -B tests/test_egr_transport.py
 	$(PYTHON) -B tests/test_pressure_transport.py
+	$(PYTHON) -B ../tools/test_fault_resources.py
